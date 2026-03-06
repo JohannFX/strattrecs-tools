@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StratTrecs — Saisonalitäts-Analyse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#1a3a5c; --navy2:#2d5a8e; --navy-dk:#0f2238;
+  --gold:#b8963e; --gold2:#d4af62;
+  --bg:#f5f4f1; --bg2:#edecea; --bg3:#e5e3de;
+  --surface:#ffffff; --surface2:#f9f8f6;
+  --border:#d8d5ce; --border2:#c8c4bc;
+  --text:#1c1c1c; --text-mid:#4a4540; --text-dim:#888078;
+  --win:#1e6b3a; --win-bg:rgba(30,107,58,.08); --win-border:rgba(30,107,58,.25);
+  --loss:#8b1a1a; --loss-bg:rgba(139,26,26,.08); --loss-border:rgba(139,26,26,.25);
+  --be:#7a5c00; --be-bg:rgba(122,92,0,.08);
+  --accent:var(--navy); --accent2:var(--navy2);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Source Sans 3',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 36px;height:54px;
+  background:rgba(255,255,255,0.94);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:200;box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.logo{font-family:'Source Code Pro',monospace;font-size:13px;font-weight:600;color:var(--navy);letter-spacing:.04em;text-decoration:none;}
+.logo span{color:var(--text-dim);font-weight:400;font-size:11px;margin-left:3px;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.header-breadcrumb{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);letter-spacing:.06em;display:flex;align-items:center;gap:6px;}
+.header-breadcrumb::before{content:'//';color:var(--gold);margin-right:2px;}
+.btn-back{padding:5px 13px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-family:'Source Code Pro',monospace;font-size:10px;cursor:pointer;transition:all .2s;letter-spacing:.02em;text-decoration:none;display:inline-flex;align-items:center;gap:5px;}
+.btn-back:hover{border-color:var(--navy);color:var(--navy);}
+
+/* ── CONTROL BAR ── */
+.control-bar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:12px 36px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.cb-group{display:flex;flex-direction:column;gap:4px;}
+.cb-label{font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;}
+.cb-select{background:var(--bg2);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:'Source Code Pro',monospace;font-size:11px;padding:6px 10px;outline:none;cursor:pointer;transition:border-color .2s;min-width:160px;}
+.cb-select:focus{border-color:var(--navy);}
+.cb-select option{background:var(--surface);}
+.cb-input{background:var(--bg2);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:'Source Code Pro',monospace;font-size:11px;padding:6px 10px;outline:none;transition:border-color .2s;width:90px;}
+.cb-input:focus{border-color:var(--navy);}
+.cb-divider{width:1px;height:36px;background:var(--border);align-self:center;}
+.btn-analyze{padding:8px 22px;border-radius:3px;border:none;background:var(--navy);color:#fff;font-family:'Source Sans 3',sans-serif;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.03em;transition:all .2s;display:flex;align-items:center;gap:7px;}
+.btn-analyze:hover{background:var(--navy2);}
+.btn-analyze:disabled{opacity:.5;cursor:not-allowed;}
+.btn-analyze .spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+.btn-analyze.loading .spinner{display:block;}
+.btn-analyze.loading .btn-text{display:none;}
+
+/* Asset quick-picks */
+.asset-pills{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.asset-pill{padding:3px 10px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-family:'Source Code Pro',monospace;font-size:9px;cursor:pointer;transition:all .15s;letter-spacing:.03em;white-space:nowrap;}
+.asset-pill:hover{border-color:var(--navy);color:var(--navy);}
+.asset-pill.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+.pill-sep{width:1px;height:14px;background:var(--border);display:inline-block;}
+
+/* ── MAIN LAYOUT ── */
+main{display:flex;min-height:calc(100vh - 108px);}
+
+/* ── LEFT STATS PANEL ── */
+.stats-panel{
+  width:260px;flex-shrink:0;
+  border-right:1px solid var(--border);
+  background:var(--surface);
+  padding:18px 16px;
+  display:flex;flex-direction:column;gap:10px;
+  overflow-y:auto;
+}
+.sp-title{font-family:'Playfair Display',serif;font-size:13px;font-weight:600;color:var(--navy-dk);letter-spacing:-.01em;margin-bottom:2px;}
+.sp-asset{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+.sp-divider{height:1px;background:var(--border);margin:4px 0;}
+.sp-label{font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;}
+
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:10px 12px;position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--navy);}
+.kpi-card.green::before{background:var(--win);}
+.kpi-card.red::before{background:var(--loss);}
+.kpi-card.gold::before{background:var(--gold);}
+.kpi-card .kc-label{font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:5px;}
+.kpi-card .kc-value{font-family:'Source Code Pro',monospace;font-size:20px;font-weight:600;line-height:1;letter-spacing:-.02em;color:var(--text);}
+.kpi-card .kc-value.pos{color:var(--win);}
+.kpi-card .kc-value.neg{color:var(--loss);}
+.kpi-card .kc-sub{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);margin-top:3px;}
+
+.best-worst-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.bw-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:8px 10px;}
+.bw-card .bw-label{font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;}
+.bw-card .bw-month{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;}
+.bw-card .bw-month.pos{color:var(--win);}
+.bw-card .bw-month.neg{color:var(--loss);}
+.bw-card .bw-val{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+/* skeleton */
+.skeleton{background:linear-gradient(90deg,var(--bg2) 25%,var(--border) 50%,var(--bg2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:3px;height:20px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* empty / error */
+.empty-panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-dim);padding:60px 40px;text-align:center;}
+.empty-icon{font-size:36px;opacity:.25;}
+.empty-title{font-family:'Source Code Pro',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;}
+.empty-sub{font-size:12px;line-height:1.6;max-width:280px;}
+
+/* ── RIGHT CONTENT ── */
+.content-panel{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:22px;background:var(--bg);}
+
+/* Section cards */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.sc-header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface);}
+.sc-title{font-family:'Source Code Pro',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-mid);display:flex;align-items:center;gap:8px;}
+.sc-title-dot{width:6px;height:6px;border-radius:50%;background:var(--navy);flex-shrink:0;}
+.sc-title-dot.gold{background:var(--gold);}
+.sc-title-dot.green{background:var(--win);}
+.sc-subtitle{font-family:'Source Code Pro',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.04em;}
+.sc-body{padding:18px;}
+
+/* ── MONTHLY BARS ── */
+.monthly-chart{display:flex;flex-direction:column;gap:0;}
+.month-row{display:grid;grid-template-columns:44px 1fr 72px 72px 72px;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg2);}
+.month-row:last-child{border-bottom:none;}
+.month-row:hover{background:var(--bg2);margin:0 -4px;padding:5px 4px;border-radius:3px;}
+.mr-name{font-family:'Source Code Pro',monospace;font-size:10px;font-weight:600;color:var(--text-mid);letter-spacing:.03em;}
+.mr-bar-wrap{position:relative;height:18px;background:var(--bg2);border-radius:2px;overflow:hidden;}
+.mr-bar{position:absolute;top:0;height:100%;border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.mr-bar.pos{background:rgba(30,107,58,.25);left:50%;}
+.mr-bar.neg{background:rgba(139,26,26,.2);right:50%;}
+.mr-zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border2);}
+.mr-val{font-family:'Source Code Pro',monospace;font-size:10px;font-weight:600;text-align:right;}
+.mr-val.pos{color:var(--win);}
+.mr-val.neg{color:var(--loss);}
+.mr-winrate{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);text-align:right;}
+.mr-count{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);text-align:right;}
+.month-header-row{display:grid;grid-template-columns:44px 1fr 72px 72px 72px;gap:8px;padding:0 0 6px;border-bottom:1px solid var(--border);}
+.mhr-label{font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);text-align:right;}
+.mhr-label:first-child{text-align:left;}
+.mhr-label:nth-child(2){text-align:left;}
+
+/* ── HEATMAP ── */
+.heatmap-container{overflow-x:auto;padding-bottom:6px;}
+.heatmap-grid{display:flex;flex-direction:column;gap:3px;min-width:600px;}
+.hm-row{display:flex;gap:3px;align-items:center;}
+.hm-year-label{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);width:38px;flex-shrink:0;letter-spacing:.02em;}
+.hm-cell{flex:1;height:28px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:'Source Code Pro',monospace;font-size:8px;font-weight:600;cursor:pointer;transition:all .15s;position:relative;}
+.hm-cell:hover{transform:scale(1.08);z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+.hm-cell.neutral{background:var(--bg2);color:var(--text-dim);}
+.hm-month-labels{display:flex;gap:3px;padding-left:41px;margin-bottom:2px;}
+.hm-month-label{flex:1;text-align:center;font-family:'Source Code Pro',monospace;font-size:8px;color:var(--text-dim);letter-spacing:.03em;}
+.hm-legend{display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:flex-end;}
+.hm-legend-bar{display:flex;gap:1px;}
+.hm-legend-cell{width:14px;height:8px;border-radius:1px;}
+.hm-legend-label{font-family:'Source Code Pro',monospace;font-size:8px;color:var(--text-dim);}
+
+/* ── WEEKDAY CHART ── */
+.weekday-chart{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.wd-col{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.wd-bar-wrap{width:100%;height:90px;display:flex;align-items:flex-end;justify-content:center;position:relative;}
+.wd-bar{width:70%;border-radius:2px 2px 0 0;min-height:2px;transition:height .6s cubic-bezier(.4,0,.2,1);}
+.wd-bar.pos{background:rgba(30,107,58,.3);}
+.wd-bar.neg{background:rgba(139,26,26,.25);}
+.wd-zero{position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--border2);}
+.wd-val{font-family:'Source Code Pro',monospace;font-size:10px;font-weight:600;}
+.wd-val.pos{color:var(--win);}
+.wd-val.neg{color:var(--loss);}
+.wd-name{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.04em;}
+.wd-wr{font-family:'Source Code Pro',monospace;font-size:8px;color:var(--text-dim);}
+
+/* ── DISTRIBUTION ── */
+.dist-chart{display:flex;flex-direction:column;gap:6px;}
+.dist-row{display:grid;grid-template-columns:100px 1fr 50px;align-items:center;gap:8px;}
+.dist-label{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-mid);letter-spacing:.02em;}
+.dist-bar-wrap{height:14px;background:var(--bg2);border-radius:2px;overflow:hidden;}
+.dist-bar{height:100%;border-radius:2px;background:var(--navy);opacity:.6;transition:width .6s;}
+.dist-val{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);text-align:right;}
+
+/* ── TOOLTIP ── */
+.tooltip{
+  position:fixed;z-index:500;pointer-events:none;
+  background:var(--surface);border:1px solid var(--border2);border-radius:4px;
+  padding:8px 12px;box-shadow:0 4px 16px rgba(0,0,0,.12);
+  font-family:'Source Code Pro',monospace;font-size:10px;
+  opacity:0;transition:opacity .15s;white-space:nowrap;
+}
+.tooltip.visible{opacity:1;}
+.tt-title{font-size:9px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
+.tt-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:2px;}
+.tt-key{color:var(--text-dim);}
+.tt-val{font-weight:600;color:var(--text);}
+.tt-val.pos{color:var(--win);}
+.tt-val.neg{color:var(--loss);}
+
+/* ── ERROR TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:10px 16px;font-family:'Source Code Pro',monospace;font-size:10px;color:var(--loss);z-index:999;opacity:0;transform:translateY(6px);transition:all .22s;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.1);}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{color:var(--win);}
+
+/* ── RANGE SLIDER ── */
+.range-row{display:flex;align-items:center;gap:10px;}
+.range-input{-webkit-appearance:none;height:3px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer;flex:1;}
+.range-input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--navy);cursor:pointer;border:2px solid var(--surface);}
+.range-val{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--navy);font-weight:600;min-width:28px;}
+
+/* ── NOTICE ── */
+.notice{background:var(--be-bg);border:1px solid rgba(122,92,0,.2);border-radius:4px;padding:8px 12px;font-family:'Source Code Pro',monospace;font-size:9px;color:var(--be);letter-spacing:.03em;line-height:1.5;}
+
+/* ── CORR MATRIX ── */
+.corr-table{width:100%;border-collapse:collapse;}
+.corr-table th,.corr-table td{padding:5px 8px;text-align:center;font-family:'Source Code Pro',monospace;font-size:9px;}
+.corr-table th{color:var(--text-dim);letter-spacing:.05em;border-bottom:1px solid var(--border);}
+.corr-table td{border:1px solid var(--bg2);}
+.corr-cell{width:40px;height:26px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:'Source Code Pro',monospace;font-size:9px;font-weight:600;margin:1px auto;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  main{flex-direction:column;}
+  .stats-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);}
+  .control-bar{padding:10px 16px;}
+  .content-panel{padding:16px 14px;}
+}
+
+/* ── GRID helper ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:860px){.two-col{grid-template-columns:1fr;}}
+
+/* gold accent line */
+.gold-line{height:1px;background:linear-gradient(90deg,var(--gold),transparent);margin:6px 0;}
+
+/* ── SEASONAL MAIN CHART ── */
+.season-chart-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:visible;}
+.sch-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.sch-left{display:flex;flex-direction:column;gap:3px;}
+.sch-badge{font-family:'Source Code Pro',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-mid);display:flex;align-items:center;gap:7px;}
+.sch-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--navy);flex-shrink:0;}
+.sch-name{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--navy-dk);}
+.sch-info{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);}
+/* Range input controls */
+.sch-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sch-range-group{display:flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:5px 10px;}
+.sch-range-label{font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;white-space:nowrap;}
+.sch-range-sep{font-family:'Source Code Pro',monospace;font-size:11px;color:var(--text-dim);padding:0 2px;}
+.sch-day{width:28px;background:transparent;border:none;border-bottom:1px solid var(--border2);color:var(--navy);font-family:'Source Code Pro',monospace;font-size:11px;font-weight:600;outline:none;text-align:center;padding:1px 0;}
+.sch-day:focus{border-bottom-color:var(--navy);}
+.sch-month{background:transparent;border:none;border-bottom:1px solid var(--border2);color:var(--navy);font-family:'Source Code Pro',monospace;font-size:11px;font-weight:600;outline:none;cursor:pointer;padding:1px 0;}
+.sch-month:focus{border-bottom-color:var(--navy);}
+.sch-btn-apply{padding:5px 13px;border-radius:3px;border:none;background:var(--navy);color:#fff;font-family:'Source Code Pro',monospace;font-size:9px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:background .15s;}
+.sch-btn-apply:hover{background:var(--navy2);}
+.sch-btn-clear{padding:5px 10px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-family:'Source Code Pro',monospace;font-size:9px;cursor:pointer;transition:all .15s;display:none;}
+.sch-btn-clear:hover{border-color:var(--loss);color:var(--loss);}
+.sch-hint{font-family:'Source Code Pro',monospace;font-size:8px;color:var(--text-dim);display:flex;align-items:center;gap:4px;opacity:.7;}
+.sch-btn-years{padding:5px 13px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);font-family:'Source Code Pro',monospace;font-size:9px;cursor:pointer;transition:all .2s;letter-spacing:.04em;}
+.sch-btn-years:hover{border-color:var(--navy);color:var(--navy);}
+.sch-btn-years.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+/* Canvas */
+.season-canvas-wrap{padding:0;position:relative;user-select:none;-webkit-user-select:none;}
+#seasonChart{display:block;width:100%;cursor:crosshair;}
+/* Range KPI strip */
+.srk-strip{display:none;padding:12px 20px;border-top:2px solid var(--gold);background:linear-gradient(90deg,rgba(184,150,62,.05),transparent 60%);flex-wrap:wrap;gap:0;}
+.srk-strip.on{display:flex;}
+.srk-cell{flex:1;min-width:90px;display:flex;flex-direction:column;gap:2px;padding:0 16px;border-right:1px solid var(--border);}
+.srk-cell:first-child{padding-left:4px;}
+.srk-cell:last-child{border-right:none;}
+.srk-lbl{font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;}
+.srk-num{font-family:'Source Code Pro',monospace;font-size:15px;font-weight:700;line-height:1.1;}
+.srk-num.pos{color:var(--win);}
+.srk-num.neg{color:var(--loss);}
+.srk-sub{font-family:'Source Code Pro',monospace;font-size:8px;color:var(--text-dim);}
+
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo">StratTrecs <span>// SEASONALITY</span></a>
+  <div class="header-right">
+    <div class="header-breadcrumb">SAISONALITÄTS-ANALYSE</div>
+    <a href="index.html" class="btn-back">← Zurück</a>
+  </div>
+</header>
+
+<!-- CONTROL BAR -->
+<div class="control-bar">
+  <!-- Asset Category Quick Picks -->
+  <div class="cb-group">
+    <div class="cb-label">Asset-Klasse</div>
+    <div class="asset-pills" id="categoryPills">
+      <button class="asset-pill active" onclick="setCategory('fx',this)">FX</button>
+      <button class="asset-pill" onclick="setCategory('indices',this)">Indizes</button>
+      <button class="asset-pill" onclick="setCategory('commodities',this)">Rohstoffe</button>
+      <button class="asset-pill" onclick="setCategory('crypto',this)">Krypto</button>
+    </div>
+  </div>
+
+  <div class="cb-divider"></div>
+
+  <!-- Symbol select -->
+  <div class="cb-group">
+    <div class="cb-label">Symbol</div>
+    <select class="cb-select" id="symbolSelect" onchange="onSymbolChange()"></select>
+  </div>
+
+  <!-- Custom ticker -->
+  <div class="cb-group">
+    <div class="cb-label">Eigenes Ticker (Yahoo)</div>
+    <input class="cb-input" type="text" id="customTicker" placeholder="z.B. AAPL" style="width:110px;" onkeydown="if(event.key==='Enter')runAnalysis()">
+  </div>
+
+  <div class="cb-divider"></div>
+
+  <!-- Lookback years -->
+  <div class="cb-group">
+    <div class="cb-label">Lookback Jahre</div>
+    <div class="range-row">
+      <input class="range-input" type="range" id="lookbackRange" min="1" max="25" value="10" oninput="document.getElementById('lookbackVal').textContent=this.value">
+      <span class="range-val" id="lookbackVal">10</span>
+    </div>
+  </div>
+
+  <div class="cb-divider"></div>
+
+  <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">
+    <div class="spinner"></div>
+    <span class="btn-text">Analysieren</span>
+  </button>
+</div>
+
+<!-- MAIN -->
+<main>
+  <!-- LEFT: Key Stats -->
+  <aside class="stats-panel" id="statsPanel">
+    <div class="sp-title">Kennzahlen</div>
+    <div class="sp-asset" id="spAssetLabel">— Asset auswählen —</div>
+    <div class="gold-line"></div>
+
+    <div class="sp-label">Performance</div>
+    <div class="kpi-card" id="kpiReturn">
+      <div class="kc-label">Ø Jahresrendite</div>
+      <div class="kc-value neutral" id="kpiReturnVal">—</div>
+      <div class="kc-sub" id="kpiReturnSub">Arithmetisches Mittel</div>
+    </div>
+    <div class="kpi-card" id="kpiWinrate">
+      <div class="kc-label">Gewinn-Monate</div>
+      <div class="kc-value neutral" id="kpiWinrateVal">—</div>
+      <div class="kc-sub" id="kpiWinrateSub">% der analysierten Monate</div>
+    </div>
+
+    <div class="sp-divider"></div>
+    <div class="sp-label">Risiko</div>
+
+    <div class="kpi-card" id="kpiVol">
+      <div class="kc-label">Standardabweichung</div>
+      <div class="kc-value neutral" id="kpiVolVal">—</div>
+      <div class="kc-sub">Monatlich (annualisiert)</div>
+    </div>
+    <div class="kpi-card" id="kpiSharpe">
+      <div class="kc-label">Sharpe Ratio</div>
+      <div class="kc-value neutral" id="kpiSharpeVal">—</div>
+      <div class="kc-sub" id="kpiSharpeSub">Rendite / Volatilität</div>
+    </div>
+    <div class="kpi-card" id="kpiDD">
+      <div class="kc-label">Max. Drawdown</div>
+      <div class="kc-value neutral" id="kpiDDVal">—</div>
+      <div class="kc-sub">Peak-to-Trough (Monatsbasis)</div>
+    </div>
+
+    <div class="sp-divider"></div>
+    <div class="sp-label">Saisonale Highlights</div>
+
+    <div class="best-worst-row">
+      <div class="bw-card">
+        <div class="bw-label">Stärkster Monat</div>
+        <div class="bw-month pos" id="bestMonth">—</div>
+        <div class="bw-val" id="bestMonthVal"></div>
+      </div>
+      <div class="bw-card">
+        <div class="bw-label">Schwächster Monat</div>
+        <div class="bw-month neg" id="worstMonth">—</div>
+        <div class="bw-val" id="worstMonthVal"></div>
+      </div>
+    </div>
+    <div class="best-worst-row">
+      <div class="bw-card">
+        <div class="bw-label">Stärkster Tag</div>
+        <div class="bw-month pos" id="bestDay">—</div>
+        <div class="bw-val" id="bestDayVal"></div>
+      </div>
+      <div class="bw-card">
+        <div class="bw-label">Schwächster Tag</div>
+        <div class="bw-month neg" id="worstDay">—</div>
+        <div class="bw-val" id="worstDayVal"></div>
+      </div>
+    </div>
+
+    <div class="sp-divider"></div>
+    <div class="sp-label">Analyse-Zeitraum</div>
+    <div class="kpi-card">
+      <div class="kc-label">Datenpunkte</div>
+      <div class="kc-value neutral" style="font-size:16px;" id="kpiDataPoints">—</div>
+      <div class="kc-sub" id="kpiPeriod">— bis —</div>
+    </div>
+  </aside>
+
+  <!-- RIGHT: Charts -->
+  <div class="content-panel" id="contentPanel">
+
+    <!-- ══ SEASONAL CHART ══ -->
+    <div class="season-chart-card" id="seasonChartCard">
+      <div class="sch-header">
+        <div class="sch-left">
+          <div class="sch-badge"><div class="sch-badge-dot"></div>Saisonaler Jahresverlauf</div>
+          <div class="sch-name" id="schName">— Asset auswählen —</div>
+          <div class="sch-info" id="schInfo">Index rebasiert auf 100 · Ø über alle Lookback-Jahre</div>
+        </div>
+        <div class="sch-controls">
+          <button class="sch-btn-years" id="btnToggleYears" onclick="toggleYearLines()">Einzeljahre</button>
+          <div class="sch-range-group">
+            <div class="sch-range-label">Von</div>
+            <input class="sch-day" id="fromDay" type="number" min="1" max="31" value="1">
+            <select class="sch-month" id="fromMonth">
+              <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mär</option>
+              <option value="3">Apr</option><option value="4">Mai</option><option value="5">Jun</option>
+              <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
+              <option value="9">Okt</option><option value="10">Nov</option><option value="11">Dez</option>
+            </select>
+          </div>
+          <div class="sch-range-sep">→</div>
+          <div class="sch-range-group">
+            <div class="sch-range-label">Bis</div>
+            <input class="sch-day" id="toDay" type="number" min="1" max="31" value="31">
+            <select class="sch-month" id="toMonth">
+              <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mär</option>
+              <option value="3">Apr</option><option value="4">Mai</option><option value="5">Jun</option>
+              <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
+              <option value="9">Okt</option><option value="10">Nov</option><option value="11">Dez</option>
+            </select>
+          </div>
+          <button class="sch-btn-apply" onclick="applyInputRange()">Markieren</button>
+          <button class="sch-btn-clear" id="btnClearRange" onclick="clearSeasonRange()">✕ Löschen</button>
+          <div class="sch-hint">⟵⟶ oder im Chart ziehen</div>
+        </div>
+      </div>
+      <div class="season-canvas-wrap" id="seasonCanvasWrap">
+        <canvas id="seasonChart"></canvas>
+      </div>
+      <div class="srk-strip" id="srkStrip">
+        <div class="srk-cell"><div class="srk-lbl">Zeitraum</div><div class="srk-num" id="srkPeriod">—</div><div class="srk-sub" id="srkDays"></div></div>
+        <div class="srk-cell"><div class="srk-lbl">Ø Rendite</div><div class="srk-num" id="srkReturn">—</div><div class="srk-sub">Ø über alle Jahre</div></div>
+        <div class="srk-cell"><div class="srk-lbl">Gewinn-Jahre</div><div class="srk-num" id="srkWin">—</div><div class="srk-sub" id="srkWinSub"></div></div>
+        <div class="srk-cell"><div class="srk-lbl">Bestes Jahr</div><div class="srk-num pos" id="srkBest">—</div><div class="srk-sub" id="srkBestY"></div></div>
+        <div class="srk-cell"><div class="srk-lbl">Schlechtestes Jahr</div><div class="srk-num neg" id="srkWorst">—</div><div class="srk-sub" id="srkWorstY"></div></div>
+        <div class="srk-cell"><div class="srk-lbl">Sharpe</div><div class="srk-num" id="srkSharpe">—</div><div class="srk-sub">Rendite/Stddev</div></div>
+      </div>
+    </div>
+
+    <!-- Results (hidden until data loaded) -->
+    <div id="resultsContainer" style="display:none;flex-direction:column;gap:20px;">
+
+      <!-- Monthly Performance -->
+      <div class="section-card">
+        <div class="sc-header">
+          <div class="sc-title"><div class="sc-title-dot"></div>Monatliche Saisonalität</div>
+          <div class="sc-subtitle" id="monthlySubtitle">Ø Rendite je Kalendermonat</div>
+        </div>
+        <div class="sc-body">
+          <div class="month-header-row">
+            <div class="mhr-label">Monat</div>
+            <div class="mhr-label" style="text-align:left;padding-left:8px;">Relativer Verlauf</div>
+            <div class="mhr-label">Ø Rendite</div>
+            <div class="mhr-label">Gewinn-%</div>
+            <div class="mhr-label">Jahre (n)</div>
+          </div>
+          <div class="monthly-chart" id="monthlyChart"></div>
+        </div>
+      </div>
+
+      <!-- Heatmap + Weekday side by side -->
+      <div class="two-col">
+        <!-- Heatmap -->
+        <div class="section-card">
+          <div class="sc-header">
+            <div class="sc-title"><div class="sc-title-dot gold"></div>Jahres-Heatmap</div>
+            <div class="sc-subtitle">Monatliche Rendite nach Jahr</div>
+          </div>
+          <div class="sc-body" style="padding:14px 14px 10px;">
+            <div class="heatmap-container">
+              <div class="hm-month-labels" id="hmMonthLabels"></div>
+              <div class="heatmap-grid" id="heatmapGrid"></div>
+              <div class="hm-legend">
+                <div class="hm-legend-label">neg</div>
+                <div class="hm-legend-bar" id="hmLegendBar"></div>
+                <div class="hm-legend-label">pos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekday -->
+        <div class="section-card">
+          <div class="sc-header">
+            <div class="sc-title"><div class="sc-title-dot green"></div>Wochentag-Analyse</div>
+            <div class="sc-subtitle">Ø Tagesrendite nach Wochentag</div>
+          </div>
+          <div class="sc-body">
+            <div class="weekday-chart" id="weekdayChart"></div>
+            <div style="margin-top:14px;border-top:1px solid var(--bg2);padding-top:12px;">
+              <div style="font-family:'Source Code Pro',monospace;font-size:8px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;">Rendite-Verteilung (Monatlich)</div>
+              <canvas id="distCanvas" height="60" style="width:100%;display:block;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Return Distribution -->
+      <div class="section-card">
+        <div class="sc-header">
+          <div class="sc-title"><div class="sc-title-dot"></div>Rendite-Statistik &amp; Verteilung</div>
+          <div class="sc-subtitle" id="distSubtitle">Monatliche Renditen</div>
+        </div>
+        <div class="sc-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;" id="distKpiRow"></div>
+          <canvas id="histCanvas" height="100" style="width:100%;display:block;cursor:crosshair;"></canvas>
+          <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;">
+            <div style="display:flex;align-items:center;gap:5px;font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);">
+              <div style="width:10px;height:10px;border-radius:2px;background:rgba(30,107,58,.35);"></div>Positiv
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);">
+              <div style="width:10px;height:10px;border-radius:2px;background:rgba(139,26,26,.3);"></div>Negativ
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notice -->
+      <div class="notice">
+        ⚠ Hinweis: Die Daten stammen von Yahoo Finance via CORS-Proxy. Historische Saisonalität ist kein Garant für künftige Entwicklungen. Tool dient ausschließlich der Analyse.
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <div class="tt-title" id="ttTitle"></div>
+  <div id="ttBody"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ASSET REGISTRY
+// ═══════════════════════════════════════════════════════
+const ASSETS = {
+  fx: [
+    {label:'EUR/USD',ticker:'EURUSD=X'},{label:'GBP/USD',ticker:'GBPUSD=X'},
+    {label:'USD/JPY',ticker:'JPY=X'},{label:'USD/CHF',ticker:'CHF=X'},
+    {label:'AUD/USD',ticker:'AUDUSD=X'},{label:'NZD/USD',ticker:'NZDUSD=X'},
+    {label:'USD/CAD',ticker:'CAD=X'},{label:'EUR/GBP',ticker:'EURGBP=X'},
+    {label:'EUR/JPY',ticker:'EURJPY=X'},{label:'GBP/JPY',ticker:'GBPJPY=X'},
+  ],
+  indices: [
+    {label:'S&P 500',ticker:'^GSPC'},{label:'NASDAQ 100',ticker:'^NDX'},
+    {label:'Dow Jones',ticker:'^DJI'},{label:'DAX',ticker:'^GDAXI'},
+    {label:'EURO STOXX 50',ticker:'^STOXX50E'},{label:'FTSE 100',ticker:'^FTSE'},
+    {label:'Nikkei 225',ticker:'^N225'},{label:'Hang Seng',ticker:'^HSI'},
+    {label:'Russell 2000',ticker:'^RUT'},{label:'VIX',ticker:'^VIX'},
+  ],
+  commodities: [
+    {label:'Gold',ticker:'GC=F'},{label:'Silber',ticker:'SI=F'},
+    {label:'WTI Öl',ticker:'CL=F'},{label:'Brent Öl',ticker:'BZ=F'},
+    {label:'Kupfer',ticker:'HG=F'},{label:'Erdgas',ticker:'NG=F'},
+    {label:'Weizen',ticker:'ZW=F'},{label:'Mais',ticker:'ZC=F'},
+    {label:'Sojabohnen',ticker:'ZS=F'},{label:'Palladium',ticker:'PA=F'},
+  ],
+  crypto: [
+    {label:'Bitcoin (BTC)',ticker:'BTC-USD'},{label:'Ethereum (ETH)',ticker:'ETH-USD'},
+    {label:'Solana (SOL)',ticker:'SOL-USD'},{label:'XRP',ticker:'XRP-USD'},
+    {label:'BNB',ticker:'BNB-USD'},{label:'Cardano (ADA)',ticker:'ADA-USD'},
+  ]
+};
+
+const MONTH_NAMES = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const WEEKDAY_NAMES = ['Mo','Di','Mi','Do','Fr'];
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?'
+];
+
+let currentCategory = 'fx';
+let currentData = null;
+let tooltipEl, toastTimer;
+let activeRange = null;     // { fromDOY, toDOY } or null
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  tooltipEl = document.getElementById('tooltip');
+  setCategory('fx', document.querySelector('.asset-pill.active'));
+});
+
+function setCategory(cat, btn) {
+  currentCategory = cat;
+  document.querySelectorAll('.asset-pill').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  populateSymbolSelect(cat);
+}
+
+function populateSymbolSelect(cat) {
+  const sel = document.getElementById('symbolSelect');
+  sel.innerHTML = '';
+  ASSETS[cat].forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.ticker;
+    opt.textContent = a.label;
+    sel.appendChild(opt);
+  });
+}
+
+function onSymbolChange() {
+  document.getElementById('customTicker').value = '';
+}
+
+// ═══════════════════════════════════════════════════════
+// FETCH DATA
+// ═══════════════════════════════════════════════════════
+async function fetchYahoo(ticker, years) {
+  const end = Math.floor(Date.now() / 1000);
+  const start = end - years * 365.25 * 24 * 3600;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1mo&period1=${Math.floor(start)}&period2=${end}&events=history`;
+
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    try {
+      const res = await fetch(CORS_PROXIES[i] + encodeURIComponent(url), {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const result = json?.chart?.result?.[0];
+      if (!result) continue;
+      const timestamps = result.timestamp;
+      const closes = result.indicators?.quote?.[0]?.close;
+      if (!timestamps || !closes) continue;
+
+      // Build monthly returns
+      const data = [];
+      for (let k = 1; k < timestamps.length; k++) {
+        if (closes[k] == null || closes[k-1] == null) continue;
+        const d = new Date(timestamps[k] * 1000);
+        const ret = (closes[k] / closes[k-1] - 1) * 100;
+        data.push({ date: d, year: d.getFullYear(), month: d.getMonth(), ret });
+      }
+      return data;
+    } catch(e) { continue; }
+  }
+  throw new Error('Konnte keine Daten laden. Bitte CORS-Einschränkungen prüfen oder später erneut versuchen.');
+}
+
+// Fetch daily data — full lookback for seasonal chart
+async function fetchYahooDaily(ticker, years) {
+  const end = Math.floor(Date.now() / 1000);
+  const start = end - years * 365.25 * 24 * 3600;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&period1=${Math.floor(start)}&period2=${end}&events=history`;
+
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    try {
+      const res = await fetch(CORS_PROXIES[i] + encodeURIComponent(url), {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const result = json?.chart?.result?.[0];
+      if (!result) continue;
+      const timestamps = result.timestamp;
+      const closes = result.indicators?.quote?.[0]?.close;
+      if (!timestamps || !closes) continue;
+
+      const data = [];
+      for (let k = 1; k < timestamps.length; k++) {
+        if (closes[k] == null || closes[k-1] == null) continue;
+        const d = new Date(timestamps[k] * 1000);
+        let wd = d.getDay();
+        if (wd === 0 || wd === 6) continue;
+        wd = wd - 1; // 0=Mon..4=Fri
+        const ret = (closes[k] / closes[k-1] - 1) * 100;
+        // Store DOY (0-indexed), year, weekday, close price
+        const doy = getDOY(d);
+        data.push({ date: d, year: d.getFullYear(), month: d.getMonth(), dayOfMonth: d.getDate(), doy, weekday: wd, ret, close: closes[k] });
+      }
+      return data;
+    } catch(e) { continue; }
+  }
+  return [];
+}
+
+// Get 0-indexed day-of-year for a Date object
+function getDOY(d) {
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = d - start;
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.floor(diff / oneDay) - 1; // 0-indexed: Jan 1 = 0
+}
+
+// ═══════════════════════════════════════════════════════
+// ANALYSIS ENGINE
+// ═══════════════════════════════════════════════════════
+function analyzeMonthly(data) {
+  // Group by month
+  const byMonth = Array.from({length:12}, () => []);
+  data.forEach(d => byMonth[d.month].push(d.ret));
+  return byMonth.map((rets, i) => {
+    if (!rets.length) return { month: i, avg: 0, winrate: 0, n: 0, stddev: 0 };
+    const avg = rets.reduce((s,v) => s+v, 0) / rets.length;
+    const wins = rets.filter(r => r > 0).length;
+    const winrate = (wins / rets.length) * 100;
+    const variance = rets.reduce((s,v) => s + Math.pow(v-avg,2), 0) / Math.max(rets.length-1,1);
+    return { month: i, avg, winrate, n: rets.length, stddev: Math.sqrt(variance), rets };
+  });
+}
+
+function analyzeWeekday(dailyData) {
+  const byDay = Array.from({length:5}, () => []);
+  dailyData.forEach(d => byDay[d.weekday].push(d.ret));
+  return byDay.map((rets, i) => {
+    if (!rets.length) return { day: i, avg: 0, winrate: 0, n: 0 };
+    const avg = rets.reduce((s,v) => s+v, 0) / rets.length;
+    const wins = rets.filter(r => r > 0).length;
+    return { day: i, avg, winrate: (wins/rets.length)*100, n: rets.length };
+  });
+}
+
+function computeStats(data) {
+  const rets = data.map(d => d.ret);
+  const n = rets.length;
+  if (!n) return {};
+  const mean = rets.reduce((s,v) => s+v, 0) / n;
+  const annMean = mean * 12;
+  const variance = rets.reduce((s,v) => s + Math.pow(v-mean,2), 0) / Math.max(n-1,1);
+  const stddevMonthly = Math.sqrt(variance);
+  const stddevAnnual = stddevMonthly * Math.sqrt(12);
+  // Annualisiertes Sharpe: (Ø Jahresrendite) / (annualisierte Volatilität)
+  // Kein risikofreier Zinssatz abgezogen (Saisonalitäts-Kontext, nicht Portfolio)
+  const sharpe = stddevAnnual > 0 ? (annMean / stddevAnnual) : 0;
+  const wins = rets.filter(r => r > 0).length;
+  const winrate = (wins / n) * 100;
+
+  // Max drawdown (cumulative return based)
+  let cumRet = 0, peak = 0, maxDD = 0;
+  rets.forEach(r => {
+    cumRet += r;
+    if (cumRet > peak) peak = cumRet;
+    const dd = peak - cumRet;
+    if (dd > maxDD) maxDD = dd;
+  });
+
+  const sorted = [...rets].sort((a,b) => a-b);
+  const median = n % 2 === 0 ? (sorted[n/2-1]+sorted[n/2])/2 : sorted[Math.floor(n/2)];
+  const skewness = n > 2 ? (rets.reduce((s,v) => s + Math.pow((v-mean)/stddevMonthly,3),0) * n / ((n-1)*(n-2))) : 0;
+
+  return { mean, annMean, stddevMonthly, stddevAnnual, sharpe, winrate, maxDD, median, skewness, n, rets };
+}
+
+// ═══════════════════════════════════════════════════════
+// MAIN RUN
+// ═══════════════════════════════════════════════════════
+async function runAnalysis() {
+  const btn = document.getElementById('analyzeBtn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  const customTicker = document.getElementById('customTicker').value.trim().toUpperCase();
+  const ticker = customTicker || document.getElementById('symbolSelect').value;
+  const years = parseInt(document.getElementById('lookbackRange').value);
+
+  try {
+    // Fetch monthly (for stats/bars/heatmap) AND daily (for seasonal chart + weekday)
+    const [monthlyData, dailyData] = await Promise.all([
+      fetchYahoo(ticker, years),
+      fetchYahooDaily(ticker, years)
+    ]);
+
+    if (!monthlyData.length) throw new Error('Keine Daten für dieses Symbol gefunden.');
+
+    currentData = { monthlyData, dailyData, ticker, years };
+
+    const stats = computeStats(monthlyData);
+    const monthlyAnalysis = analyzeMonthly(monthlyData);
+    const weekdayAnalysis = analyzeWeekday(dailyData);
+
+    // ── Seasonal chart (hero) — needs layout to be settled for correct width
+    renderSeasonalChart(ticker, years, monthlyData, dailyData);
+
+    renderStats(stats, monthlyAnalysis, weekdayAnalysis, ticker, monthlyData);
+    renderMonthlyChart(monthlyAnalysis, years);
+    renderHeatmap(monthlyData);
+    renderWeekdayChart(weekdayAnalysis);
+    renderDistribution(stats);
+
+    document.getElementById('resultsContainer').style.display = 'flex';
+    document.getElementById('resultsContainer').style.flexDirection = 'column';
+    document.getElementById('resultsContainer').style.gap = '20px';
+
+    showToast('Analyse geladen ✓', true);
+  } catch(e) {
+    showToast(e.message || 'Fehler beim Laden der Daten');
+    console.error(e);
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER STATS PANEL
+// ═══════════════════════════════════════════════════════
+function renderStats(stats, monthly, weekday, ticker, rawData) {
+  // Asset label
+  let displayName = ticker;
+  for (const cat of Object.values(ASSETS)) {
+    const found = cat.find(a => a.ticker === ticker);
+    if (found) { displayName = found.label; break; }
+  }
+  document.getElementById('spAssetLabel').textContent = displayName + ' · ' + document.getElementById('lookbackRange').value + 'J';
+
+  // KPIs
+  const retEl = document.getElementById('kpiReturnVal');
+  retEl.textContent = (stats.annMean >= 0 ? '+' : '') + stats.annMean.toFixed(2) + '%';
+  retEl.className = 'kc-value ' + (stats.annMean >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpiReturnSub').textContent = 'Ø jährlich (monatl. Basis)';
+
+  const wrEl = document.getElementById('kpiWinrateVal');
+  wrEl.textContent = stats.winrate.toFixed(1) + '%';
+  wrEl.className = 'kc-value ' + (stats.winrate >= 50 ? 'pos' : 'neg');
+  document.getElementById('kpiWinrateSub').textContent = `${Math.round(stats.winrate/100*stats.n)}/${stats.n} positive Monate`;
+
+  document.getElementById('kpiVolVal').textContent = stats.stddevAnnual.toFixed(2) + '%';
+  document.getElementById('kpiVolVal').className = 'kc-value neutral';
+
+  const sharpeEl = document.getElementById('kpiSharpeVal');
+  sharpeEl.textContent = stats.sharpe.toFixed(3);
+  sharpeEl.className = 'kc-value ' + (stats.sharpe >= 0.5 ? 'pos' : stats.sharpe < 0 ? 'neg' : 'neutral');
+  document.getElementById('kpiSharpeSub').textContent = stats.sharpe >= 1 ? 'Exzellent' : stats.sharpe >= 0.5 ? 'Gut' : stats.sharpe >= 0 ? 'Akzeptabel' : 'Schwach';
+
+  const ddEl = document.getElementById('kpiDDVal');
+  ddEl.textContent = '-' + stats.maxDD.toFixed(2) + '%';
+  ddEl.className = 'kc-value ' + (stats.maxDD > 0 ? 'neg' : 'neutral');
+
+  // Best/worst month
+  const sorted = [...monthly].sort((a,b) => b.avg - a.avg);
+  const best = sorted[0], worst = sorted[sorted.length-1];
+  document.getElementById('bestMonth').textContent = MONTH_NAMES[best.month];
+  document.getElementById('bestMonthVal').textContent = (best.avg >= 0 ? '+' : '') + best.avg.toFixed(2) + '%';
+  document.getElementById('worstMonth').textContent = MONTH_NAMES[worst.month];
+  document.getElementById('worstMonthVal').textContent = worst.avg.toFixed(2) + '%';
+
+  // Best/worst weekday
+  const wdData = analyzeWeekday(currentData?.dailyData || []);
+  if (wdData.some(d => d.n > 0)) {
+    const wdSorted = [...wdData].filter(d => d.n > 0).sort((a,b) => b.avg - a.avg);
+    document.getElementById('bestDay').textContent = WEEKDAY_NAMES[wdSorted[0].day];
+    document.getElementById('bestDayVal').textContent = (wdSorted[0].avg >= 0 ? '+' : '') + wdSorted[0].avg.toFixed(3) + '%';
+    document.getElementById('worstDay').textContent = WEEKDAY_NAMES[wdSorted[wdSorted.length-1].day];
+    document.getElementById('worstDayVal').textContent = wdSorted[wdSorted.length-1].avg.toFixed(3) + '%';
+  }
+
+  // Data period
+  const dates = rawData.map(d => d.date).sort((a,b) => a-b);
+  const fromY = dates[0]?.getFullYear();
+  const toY = dates[dates.length-1]?.getFullYear();
+  document.getElementById('kpiDataPoints').textContent = stats.n;
+  document.getElementById('kpiPeriod').textContent = fromY + ' – ' + toY;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER MONTHLY BARS
+// ═══════════════════════════════════════════════════════
+function renderMonthlyChart(monthly, years) {
+  const el = document.getElementById('monthlyChart');
+  el.innerHTML = '';
+  const maxAbs = Math.max(...monthly.map(m => Math.abs(m.avg)), 0.1);
+  document.getElementById('monthlySubtitle').textContent = `Ø Rendite je Kalendermonat · ${years} Jahre`;
+
+  monthly.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'month-row';
+
+    const pct = (Math.abs(m.avg) / maxAbs) * 48; // max 48% width on each side
+    const isPos = m.avg >= 0;
+
+    row.innerHTML = `
+      <div class="mr-name">${MONTH_NAMES[m.month]}</div>
+      <div class="mr-bar-wrap">
+        <div class="mr-zero"></div>
+        <div class="mr-bar ${isPos?'pos':'neg'}" style="width:0%" data-target="${pct}%"></div>
+      </div>
+      <div class="mr-val ${isPos?'pos':'neg'}">${(m.avg>=0?'+':'')+m.avg.toFixed(2)}%</div>
+      <div class="mr-winrate">${m.n>0?m.winrate.toFixed(0)+'%':'—'}</div>
+      <div class="mr-count">${m.n}</div>
+    `;
+
+    // Tooltip
+    row.addEventListener('mouseenter', e => showTooltip(e, MONTH_NAMES[m.month], [
+      ['Ø Rendite', (m.avg>=0?'+':'')+m.avg.toFixed(3)+'%', isPos?'pos':'neg'],
+      ['Gewinn-Monate', m.winrate.toFixed(1)+'%'],
+      ['Stddev', m.stddev.toFixed(2)+'%'],
+      ['Datenpunkte', m.n+' Jahre'],
+    ]));
+    row.addEventListener('mousemove', moveTooltip);
+    row.addEventListener('mouseleave', hideTooltip);
+
+    el.appendChild(row);
+
+    // Animate bars
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const bar = row.querySelector('.mr-bar');
+        if (bar) bar.style.width = bar.dataset.target;
+      }, 50);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER HEATMAP
+// ═══════════════════════════════════════════════════════
+function renderHeatmap(data) {
+  const grid = document.getElementById('heatmapGrid');
+  const monthLabels = document.getElementById('hmMonthLabels');
+  grid.innerHTML = '';
+  monthLabels.innerHTML = '';
+
+  MONTH_NAMES.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'hm-month-label';
+    el.textContent = m;
+    monthLabels.appendChild(el);
+  });
+
+  // Group by year
+  const byYear = {};
+  data.forEach(d => {
+    if (!byYear[d.year]) byYear[d.year] = {};
+    byYear[d.year][d.month] = d.ret;
+  });
+
+  const years = Object.keys(byYear).sort();
+  const allRets = data.map(d => d.ret);
+  const maxAbs = Math.max(...allRets.map(r => Math.abs(r)), 1);
+
+  years.forEach(year => {
+    const row = document.createElement('div');
+    row.className = 'hm-row';
+
+    const yearLabel = document.createElement('div');
+    yearLabel.className = 'hm-year-label';
+    yearLabel.textContent = year;
+    row.appendChild(yearLabel);
+
+    for (let m = 0; m < 12; m++) {
+      const ret = byYear[year][m];
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+
+      if (ret === undefined || ret === null) {
+        cell.classList.add('neutral');
+        cell.textContent = '';
+      } else {
+        const intensity = Math.min(Math.abs(ret) / maxAbs, 1);
+        if (ret > 0) {
+          cell.style.background = `rgba(30,107,58,${0.1 + intensity * 0.6})`;
+          cell.style.color = intensity > 0.5 ? '#fff' : 'var(--win)';
+        } else {
+          cell.style.background = `rgba(139,26,26,${0.1 + intensity * 0.55})`;
+          cell.style.color = intensity > 0.5 ? '#fff' : 'var(--loss)';
+        }
+        cell.textContent = (ret > 0 ? '+' : '') + ret.toFixed(1);
+
+        const yr = year, mo = m, r = ret;
+        cell.addEventListener('mouseenter', e => showTooltip(e, `${MONTH_NAMES[mo]} ${yr}`, [
+          ['Rendite', (r>=0?'+':'')+r.toFixed(2)+'%', r>=0?'pos':'neg'],
+        ]));
+        cell.addEventListener('mousemove', moveTooltip);
+        cell.addEventListener('mouseleave', hideTooltip);
+      }
+      row.appendChild(cell);
+    }
+    grid.appendChild(row);
+  });
+
+  // Legend
+  const legendBar = document.getElementById('hmLegendBar');
+  legendBar.innerHTML = '';
+  const steps = 9;
+  for (let i = 0; i < steps; i++) {
+    const c = document.createElement('div');
+    c.className = 'hm-legend-cell';
+    const half = Math.floor(steps/2);
+    if (i < half) {
+      c.style.background = `rgba(139,26,26,${0.7-(i*(0.6/half))})`;
+    } else if (i > half) {
+      c.style.background = `rgba(30,107,58,${((i-half)*(0.6/half))})`;
+    } else {
+      c.style.background = 'var(--bg2)';
+    }
+    legendBar.appendChild(c);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER WEEKDAY CHART
+// ═══════════════════════════════════════════════════════
+function renderWeekdayChart(weekday) {
+  const el = document.getElementById('weekdayChart');
+  el.innerHTML = '';
+
+  const maxAbs = Math.max(...weekday.map(w => Math.abs(w.avg)), 0.01);
+
+  weekday.forEach(w => {
+    const col = document.createElement('div');
+    col.className = 'wd-col';
+    const barPct = maxAbs > 0 ? (Math.abs(w.avg) / maxAbs) * 80 : 0;
+    const isPos = w.avg >= 0;
+
+    col.innerHTML = `
+      <div class="wd-bar-wrap">
+        <div class="wd-zero"></div>
+        <div class="wd-bar ${isPos?'pos':'neg'}" style="height:0px" data-target="${barPct}px"></div>
+      </div>
+      <div class="wd-val ${isPos?'pos':'neg'}">${w.n>0?((w.avg>=0?'+':'')+w.avg.toFixed(3)+'%'):'—'}</div>
+      <div class="wd-name">${WEEKDAY_NAMES[w.day]}</div>
+      <div class="wd-wr">${w.n>0?w.winrate.toFixed(0)+'%':''}</div>
+    `;
+
+    if (w.n > 0) {
+      col.addEventListener('mouseenter', e => showTooltip(e, WEEKDAY_NAMES[w.day], [
+        ['Ø Rendite', (w.avg>=0?'+':'')+w.avg.toFixed(4)+'%', isPos?'pos':'neg'],
+        ['Gewinnrate', w.winrate.toFixed(1)+'%'],
+        ['Datenpunkte', w.n+' Tage'],
+      ]));
+      col.addEventListener('mousemove', moveTooltip);
+      col.addEventListener('mouseleave', hideTooltip);
+    }
+
+    el.appendChild(col);
+
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const bar = col.querySelector('.wd-bar');
+        if (bar) bar.style.height = bar.dataset.target;
+        const barEl = col.querySelector('.wd-bar');
+        if (barEl) barEl.style.transition = 'height .6s cubic-bezier(.4,0,.2,1)';
+      }, 60);
+    });
+  });
+
+  // Mini distribution sparkline (canvas)
+  drawDistSparkline();
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER DISTRIBUTION (histogram)
+// ═══════════════════════════════════════════════════════
+function renderDistribution(stats) {
+  // KPI row
+  const row = document.getElementById('distKpiRow');
+  row.innerHTML = '';
+  const kpis = [
+    { label: 'Median', val: (stats.median>=0?'+':'')+stats.median.toFixed(2)+'%', cls: stats.median>=0?'pos':'neg' },
+    { label: 'Stddev (monatl.)', val: stats.stddevMonthly.toFixed(2)+'%', cls: 'neutral' },
+    { label: 'Stddev (annualisiert)', val: stats.stddevAnnual.toFixed(2)+'%', cls: 'neutral' },
+    { label: 'Schiefe', val: stats.skewness.toFixed(3), cls: stats.skewness > 0 ? 'pos' : 'neg' },
+  ];
+  kpis.forEach(k => {
+    row.innerHTML += `<div class="kpi-card">
+      <div class="kc-label">${k.label}</div>
+      <div class="kc-value ${k.cls}" style="font-size:16px;">${k.val}</div>
+    </div>`;
+  });
+
+  document.getElementById('distSubtitle').textContent = `${stats.n} monatliche Renditen · ${document.getElementById('lookbackRange').value} Jahre`;
+  drawHistogram(stats.rets);
+}
+
+function drawHistogram(rets) {
+  const canvas = document.getElementById('histCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || canvas.parentElement?.offsetWidth || 600;
+  const H = 100;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  if (!rets || !rets.length) return;
+
+  const bins = 24;
+  const min = Math.min(...rets);
+  const max = Math.max(...rets);
+  const range = max - min || 1;
+  const binW = range / bins;
+  const counts = Array(bins).fill(0);
+  rets.forEach(r => {
+    let idx = Math.floor((r - min) / binW);
+    if (idx >= bins) idx = bins - 1;
+    counts[idx]++;
+  });
+
+  const maxCount = Math.max(...counts, 1);
+  const barW = (W - 40) / bins;
+  const padL = 30, padB = 20, padT = 8;
+  const chartH = H - padB - padT;
+
+  // Axes
+  ctx.strokeStyle = '#d8d5ce';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT);
+  ctx.lineTo(padL, padT + chartH);
+  ctx.lineTo(W - 10, padT + chartH);
+  ctx.stroke();
+
+  // Zero line
+  const zeroX = padL + ((0 - min) / range) * (W - padL - 10);
+  ctx.strokeStyle = '#c8c4bc';
+  ctx.setLineDash([2, 3]);
+  ctx.beginPath();
+  ctx.moveTo(zeroX, padT);
+  ctx.lineTo(zeroX, padT + chartH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Bars
+  counts.forEach((c, i) => {
+    const x = padL + i * barW;
+    const barH = (c / maxCount) * chartH;
+    const y = padT + chartH - barH;
+    const binCenter = min + (i + 0.5) * binW;
+    ctx.fillStyle = binCenter >= 0 ? 'rgba(30,107,58,0.35)' : 'rgba(139,26,26,0.3)';
+    ctx.fillRect(x + 1, y, barW - 2, barH);
+  });
+
+  // X labels
+  ctx.font = `8px 'Source Code Pro', monospace`;
+  ctx.fillStyle = '#888078';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  [min, 0, max].forEach(v => {
+    const x = padL + ((v - min) / range) * (W - padL - 10);
+    ctx.fillText((v >= 0 ? '+' : '') + v.toFixed(1) + '%', x, padT + chartH + 4);
+  });
+
+  // Y label
+  ctx.save();
+  ctx.translate(10, padT + chartH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText('Häufigkeit', 0, 0);
+  ctx.restore();
+}
+
+function drawDistSparkline() {
+  const canvas = document.getElementById('distCanvas');
+  if (!canvas || !currentData) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 300;
+  const H = 60;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const rets = currentData.monthlyData.map(d => d.ret);
+  if (!rets.length) return;
+
+  const bins = 16;
+  const min = Math.min(...rets);
+  const max = Math.max(...rets);
+  const range = max - min || 1;
+  const binW = range / bins;
+  const counts = Array(bins).fill(0);
+  rets.forEach(r => {
+    let idx = Math.floor((r - min) / binW);
+    if (idx >= bins) idx = bins - 1;
+    counts[idx]++;
+  });
+
+  const maxC = Math.max(...counts, 1);
+  const bW = W / bins;
+  counts.forEach((c, i) => {
+    const h = (c / maxC) * (H - 8);
+    const binCenter = min + (i + 0.5) * binW;
+    ctx.fillStyle = binCenter >= 0 ? 'rgba(30,107,58,0.3)' : 'rgba(139,26,26,0.25)';
+    ctx.fillRect(i * bW + 1, H - h - 4, bW - 2, h);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// SEASONAL CHART ENGINE — daily real data
+// ═══════════════════════════════════════════════════════
+
+const DIM = [31,28,31,30,31,30,31,31,30,31,30,31];
+const TOTAL_DAYS = 365;
+
+// DOY helpers (0-indexed: Jan 1 = 0)
+function mDayToDOY(month, day) {
+  let acc = 0;
+  for (let m = 0; m < month; m++) acc += DIM[m];
+  return acc + Math.max(0, Math.min(day - 1, DIM[month] - 1));
+}
+function doyToMonthDay(doy) {
+  let acc = 0;
+  for (let m = 0; m < 12; m++) {
+    if (doy < acc + DIM[m]) return { month: m, day: doy - acc + 1 };
+    acc += DIM[m];
+  }
+  return { month: 11, day: 31 };
+}
+function doyLabel(doy) {
+  const { month, day } = doyToMonthDay(Math.max(0, Math.min(doy, 364)));
+  return MONTH_NAMES[month] + ' ' + day;
+}
+
+// ── Build per-year curves from daily data ──────────────
+// Returns: { avgCurve: Float64Array[365], yearCurves: [{year, pts:[{doy,value}]}] }
+function buildDailySeasonData(dailyData) {
+  // Group by year
+  const byYear = {};
+  dailyData.forEach(d => {
+    if (!byYear[d.year]) byYear[d.year] = [];
+    byYear[d.year].push(d);
+  });
+
+  const years = Object.keys(byYear).map(Number).sort();
+
+  // For each year: build a 365-point indexed curve (base = 100 on Jan 1)
+  // We only store years that have ≥60 data points (partial years skipped)
+  const yearCurves = [];
+  const PALETTE = [
+    '#2d5a8e','#b8963e','#4a8f6b','#8b4a6b','#5a7a8b',
+    '#8b6a2d','#4a6b8b','#8b4a4a','#6b8b4a','#7a4a8b',
+    '#3d7a5e','#8b7a2d','#5a4a8b','#8b5a3d','#4a7a7a',
+  ];
+
+  years.forEach((yr, idx) => {
+    const days = byYear[yr].sort((a,b) => a.doy - b.doy);
+    if (days.length < 60) return; // skip partial years
+
+    // Build cumulative index rebased to 100 on first trading day of the year
+    const pts = new Array(365).fill(null);
+    let runVal = 100;
+
+    // First pass: map actual trading days to DOY slots
+    const dayMap = {};
+    days.forEach(d => {
+      const clampedDoy = Math.max(0, Math.min(d.doy, 364));
+      if (dayMap[clampedDoy] === undefined) {
+        dayMap[clampedDoy] = runVal * (1 + d.ret / 100);
+        runVal = dayMap[clampedDoy];
+      }
+    });
+
+    // Forward-fill any gaps (weekends/holidays) using last known value
+    let lastVal = 100;
+    for (let i = 0; i < 365; i++) {
+      if (dayMap[i] !== undefined) lastVal = dayMap[i];
+      pts[i] = lastVal;
+    }
+
+    yearCurves.push({
+      year: yr,
+      pts,
+      color: PALETTE[idx % PALETTE.length],
+      finalVal: pts[364] || pts[pts.length - 1] || 100
+    });
+  });
+
+  if (!yearCurves.length) return null;
+
+  // ── Average curve: mean of all year curves at each DOY ──
+  const avgCurve = new Array(365).fill(0);
+  const counts   = new Array(365).fill(0);
+  yearCurves.forEach(yc => {
+    yc.pts.forEach((v, i) => {
+      if (v !== null) { avgCurve[i] += v; counts[i]++; }
+    });
+  });
+  for (let i = 0; i < 365; i++) {
+    avgCurve[i] = counts[i] > 0 ? avgCurve[i] / counts[i] : (i > 0 ? avgCurve[i-1] : 100);
+  }
+
+  // ── Stddev curve: ±1 standard deviation at each DOY ──
+  const stdCurve = new Array(365).fill(0);
+  yearCurves.forEach(yc => {
+    yc.pts.forEach((v, i) => {
+      if (v !== null) stdCurve[i] += Math.pow(v - avgCurve[i], 2);
+    });
+  });
+  for (let i = 0; i < 365; i++) {
+    stdCurve[i] = counts[i] > 1 ? Math.sqrt(stdCurve[i] / (counts[i] - 1)) : 0;
+  }
+
+  return { avgCurve, stdCurve, yearCurves };
+}
+
+// Per-year range returns from daily data
+function yearRangeReturnsDaily(yearCurves, fromDOY, toDOY) {
+  const f = Math.max(0, Math.min(fromDOY, 364));
+  const t = Math.max(0, Math.min(toDOY, 364));
+  return yearCurves.map(yc => {
+    const startV = yc.pts[f] || 100;
+    const endV   = yc.pts[t] || startV;
+    return { year: yc.year, ret: (endV / startV - 1) * 100 };
+  }).filter(r => isFinite(r.ret));
+}
+
+// Fallback: build from monthly data (used if daily fetch failed)
+function buildCurve(monthlyData) {
+  const byMonth = Array.from({length:12}, () => []);
+  monthlyData.forEach(d => byMonth[d.month].push(d.ret / 100));
+  const avgM = byMonth.map(r => r.length ? r.reduce((s,v)=>s+v,0)/r.length : 0);
+  const pts = [];
+  let val = 100;
+  for (let m = 0; m < 12; m++) {
+    const days = DIM[m];
+    const dMult = Math.pow(1 + avgM[m], 1 / days);
+    for (let d = 0; d < days; d++) {
+      pts.push({ doy: mDayToDOY(m, d+1), month: m, day: d+1, value: val });
+      val *= dMult;
+    }
+  }
+  pts.push({ doy: 364, month: 11, day: 31, value: val });
+  return pts;
+}
+
+// ── STATE ─────────────────────────────────────────────
+let SC = null; // { avgCurve, stdCurve, yearCurves, monthlyData, range }
+let SM = null; // { xFn, yFn, PAD, cW, cH, W, H }
+let showYearLines = false;
+function toggleYearLines() {
+  showYearLines = !showYearLines;
+  document.getElementById('btnToggleYears').classList.toggle('active', showYearLines);
+  if (SC) drawSeason(SC.range || null);
+}
+
+// ── DRAW ─────────────────────────────────────────────
+function drawSeason(range) {
+  if (!SC) return;
+  SC.range = range || null;
+
+  const canvas = document.getElementById('seasonChart');
+  const wrap   = document.getElementById('seasonCanvasWrap');
+  if (!canvas || !wrap) return;
+
+  // Walk up DOM until we find an ancestor with real rendered width
+  function resolveWidth(el) {
+    let node = el;
+    while (node) {
+      const w = node.getBoundingClientRect().width || node.offsetWidth;
+      if (w > 0) return Math.round(w);
+      node = node.parentElement;
+    }
+    return 900;
+  }
+  const W = resolveWidth(wrap);
+  const H = 320;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const PAD = { l: 52, r: 20, t: 16, b: 36 };
+  const cW  = W - PAD.l - PAD.r;
+  const cH  = H - PAD.t - PAD.b;
+
+  const avg = SC.avgCurve;
+
+  // Y range: include all visible year curves + avg
+  let vMin0 = Math.min(...avg), vMax0 = Math.max(...avg);
+  if (showYearLines && SC.yearCurves) {
+    SC.yearCurves.forEach(yc => {
+      const mn = Math.min(...yc.pts.filter(v => v !== null));
+      const mx = Math.max(...yc.pts.filter(v => v !== null));
+      if (mn < vMin0) vMin0 = mn;
+      if (mx > vMax0) vMax0 = mx;
+    });
+  }
+  const vPad = (vMax0 - vMin0) * 0.08 || 2;
+  const vMin = vMin0 - vPad, vMax = vMax0 + vPad;
+  const vRng = vMax - vMin || 1;
+
+  const xFn = doy => PAD.l + (doy / (TOTAL_DAYS - 1)) * cW;
+  const yFn = v   => PAD.t + (1 - (v - vMin) / vRng) * cH;
+
+  SM = { xFn, yFn, PAD, cW, cH, W, H };
+
+  // ── Y grid ──
+  ctx.font = `9px 'Source Code Pro', monospace`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  const yTicks = 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const v = vMin + vRng * i / yTicks;
+    const y = yFn(v);
+    ctx.strokeStyle = '#eeece8'; ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#888'; ctx.fillText(v.toFixed(1), PAD.l - 5, y);
+  }
+
+  // ── Baseline 100 ──
+  if (100 >= vMin && 100 <= vMax) {
+    const y0 = yFn(100);
+    ctx.strokeStyle = 'rgba(26,58,92,.2)'; ctx.lineWidth = 1;
+    ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(PAD.l, y0); ctx.lineTo(W - PAD.r, y0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(26,58,92,.5)'; ctx.font = `bold 8px 'Source Code Pro', monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText('100', PAD.l - 5, y0);
+  }
+
+  // ── Month separators + X labels ──
+  ctx.font = `8px 'Source Code Pro', monospace`;
+  ctx.fillStyle = '#aaa'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  let acc = 0;
+  DIM.forEach((days, m) => {
+    if (m > 0) {
+      ctx.strokeStyle = '#e8e6e1'; ctx.lineWidth = 1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(xFn(acc), PAD.t); ctx.lineTo(xFn(acc), PAD.t + cH); ctx.stroke();
+    }
+    ctx.fillText(MONTH_NAMES[m], xFn(acc + days/2), PAD.t + cH + 5);
+    [acc, acc+14].forEach(doy => {
+      ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xFn(doy), PAD.t+cH); ctx.lineTo(xFn(doy), PAD.t+cH+3); ctx.stroke();
+    });
+    acc += days;
+  });
+  // X axis line
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.l, PAD.t+cH); ctx.lineTo(W-PAD.r, PAD.t+cH); ctx.stroke();
+
+  // ── Year lines (background) ──
+  if (showYearLines && SC.yearCurves) {
+    SC.yearCurves.forEach(yc => {
+      ctx.strokeStyle = yc.color + '55'; // semi-transparent
+      ctx.lineWidth = 1;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      let started = false;
+      for (let i = 0; i < 365; i++) {
+        if (yc.pts[i] === null) { started = false; continue; }
+        const x = xFn(i), y = yFn(yc.pts[i]);
+        started ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        started = true;
+      }
+      ctx.stroke();
+
+      // Year label at end
+      const endV = yc.pts[364];
+      if (endV !== null) {
+        ctx.font = `7px 'Source Code Pro', monospace`;
+        ctx.fillStyle = yc.color + 'aa';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        // stagger labels slightly to avoid overlap
+        ctx.fillText(String(yc.year), xFn(364) + 3, yFn(endV));
+      }
+    });
+  }
+
+  // ── Range shading ──
+  if (range) {
+    const {fromDOY, toDOY} = range;
+    const rx1 = xFn(Math.min(fromDOY, toDOY));
+    const rx2 = xFn(Math.max(fromDOY, toDOY));
+    ctx.fillStyle = 'rgba(184,150,62,.13)';
+    ctx.fillRect(rx1, PAD.t, rx2 - rx1, cH);
+    ctx.strokeStyle = 'rgba(184,150,62,.75)'; ctx.lineWidth = 1.5; ctx.setLineDash([5,3]);
+    [rx1, rx2].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x, PAD.t); ctx.lineTo(x, PAD.t+cH); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.font = `bold 8px 'Source Code Pro', monospace`;
+    ctx.fillStyle = '#b8963e'; ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';  ctx.fillText(doyLabel(Math.min(fromDOY,toDOY)), rx1+3, PAD.t+2);
+    ctx.textAlign = 'right'; ctx.fillText(doyLabel(Math.max(fromDOY,toDOY)), rx2-3, PAD.t+2);
+  }
+
+  // ── Average curve gradient fill ──
+  const finalVal = avg[364];
+  const isUp = finalVal >= 100;
+  const grad = ctx.createLinearGradient(0, PAD.t, 0, PAD.t+cH);
+  grad.addColorStop(0, isUp ? 'rgba(30,107,58,.22)' : 'rgba(139,26,26,.16)');
+  grad.addColorStop(1, isUp ? 'rgba(30,107,58,.02)' : 'rgba(139,26,26,.02)');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(xFn(0), yFn(avg[0]));
+  for (let i = 1; i < 364; i++) {
+    const mx = (xFn(i) + xFn(i+1)) / 2;
+    const my = (yFn(avg[i]) + yFn(avg[i+1])) / 2;
+    ctx.quadraticCurveTo(xFn(i), yFn(avg[i]), mx, my);
+  }
+  ctx.lineTo(xFn(364), yFn(avg[364]));
+  ctx.lineTo(xFn(364), PAD.t+cH);
+  ctx.lineTo(xFn(0),   PAD.t+cH);
+  ctx.closePath(); ctx.fill();
+
+  // ── Average curve line ──
+  const lineColor = isUp ? '#1e6b3a' : '#8b1a1a';
+  ctx.strokeStyle = lineColor; ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(xFn(0), yFn(avg[0]));
+  for (let i = 1; i < 364; i++) {
+    const mx = (xFn(i) + xFn(i+1)) / 2;
+    const my = (yFn(avg[i]) + yFn(avg[i+1])) / 2;
+    ctx.quadraticCurveTo(xFn(i), yFn(avg[i]), mx, my);
+  }
+  ctx.lineTo(xFn(364), yFn(avg[364]));
+  ctx.stroke();
+
+  // End dot + percentage label
+  ctx.fillStyle = lineColor;
+  ctx.beginPath(); ctx.arc(xFn(364), yFn(avg[364]), 4, 0, Math.PI*2); ctx.fill();
+  ctx.font = `bold 9px 'Source Code Pro', monospace`;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const pctEnd = (finalVal - 100).toFixed(2);
+  ctx.fillStyle = lineColor;
+  ctx.fillText((pctEnd >= 0 ? '+' : '') + pctEnd + '%', xFn(364) + (showYearLines ? 32 : 7), yFn(avg[364]));
+}
+
+// ── Init / render entry point ─────────────────────────
+function renderSeasonalChart(ticker, years, monthlyData, dailyData) {
+  let displayName = ticker;
+  for (const cat of Object.values(ASSETS)) {
+    const found = cat.find(a => a.ticker === ticker);
+    if (found) { displayName = found.label; break; }
+  }
+  document.getElementById('schName').textContent = displayName;
+
+  // ── Fallback-Kette ──
+  // 1. Versuche tägliche Daten
+  let seasonData = null;
+  if (dailyData && dailyData.length >= 60) {
+    seasonData = buildDailySeasonData(dailyData);
+  }
+
+  if (seasonData && seasonData.yearCurves.length >= 2) {
+    // Tägliche Daten vorhanden → echter Chart
+    document.getElementById('schInfo').textContent =
+      `Ø-Kurve aus ${seasonData.yearCurves.length} Jahren · Tägliche Daten · Index rebasiert auf 100`;
+    SC = {
+      avgCurve: seasonData.avgCurve,
+      yearCurves: seasonData.yearCurves,
+      monthlyData,
+      range: null,
+      mode: 'daily'
+    };
+  } else {
+    // Fallback: monatliche Interpolation (12 Datenpunkte → 365 interpoliert)
+    console.warn('[SeasonChart] Daily data unavailable or insufficient — falling back to monthly interpolation');
+    document.getElementById('schInfo').textContent =
+      `Index rebasiert auf 100 · Ø über ${years} Jahre · ${monthlyData.length} Monatsdaten (interpoliert)`;
+    const pts = buildCurve(monthlyData);
+
+    // Lücken zwischen Monatspunkten linear füllen
+    const avgCurve = new Array(365);
+    pts.forEach(p => { avgCurve[Math.min(p.doy, 364)] = p.value; });
+    // Forward-fill any remaining gaps
+    let last = avgCurve[0] || 100;
+    for (let i = 0; i < 365; i++) {
+      if (avgCurve[i] === undefined) avgCurve[i] = last;
+      else last = avgCurve[i];
+    }
+
+    SC = { avgCurve, yearCurves: [], monthlyData, range: null, mode: 'monthly' };
+  }
+
+  activeRange = null;
+  showYearLines = false;
+  document.getElementById('btnToggleYears').classList.remove('active');
+  // Einzeljahre-Button nur aktiv wenn Daten vorhanden
+  document.getElementById('btnToggleYears').disabled = !SC.yearCurves.length;
+  document.getElementById('btnToggleYears').style.opacity = SC.yearCurves.length ? '1' : '0.4';
+  document.getElementById('srkStrip').classList.remove('on');
+  document.getElementById('btnClearRange').style.display = 'none';
+
+  // Zeichnen — warte bis Container wirklich Layout hat
+  // Double-rAF reicht nicht immer wenn die Seite gerade first-paint macht.
+  // Zusätzlicher 50ms Timeout als hartes Fallback.
+  function tryDraw(attemptsLeft) {
+    const wrap = document.getElementById('seasonCanvasWrap');
+    const w = wrap ? (wrap.getBoundingClientRect().width || wrap.offsetWidth) : 0;
+    if (w > 0) {
+      drawSeason(null);
+      initSeasonInteraction();
+    } else if (attemptsLeft > 0) {
+      setTimeout(() => tryDraw(attemptsLeft - 1), 60);
+    }
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => tryDraw(5)));
+}
+
+// ── Interaction: drag + hover ─────────────────────────
+function initSeasonInteraction() {
+  const canvas = document.getElementById('seasonChart');
+  if (!canvas) return;
+
+  const fresh = canvas.cloneNode(false);
+  fresh.id = 'seasonChart';
+  canvas.parentNode.replaceChild(fresh, canvas);
+  const c = document.getElementById('seasonChart');
+
+  let isDragging = false, dragStart = null;
+
+  function evtX(e) {
+    return (e.touches ? e.touches[0].clientX : e.clientX) - c.getBoundingClientRect().left;
+  }
+  function xToDOY(mx) {
+    if (!SM) return 0;
+    const doy = Math.round(((mx - SM.PAD.l) / SM.cW) * (TOTAL_DAYS - 1));
+    return Math.max(0, Math.min(TOTAL_DAYS - 1, doy));
+  }
+
+  c.addEventListener('mousedown', e => {
+    if (!SM || !SC) return;
+    isDragging = true; dragStart = xToDOY(evtX(e));
+    hideTooltip(); e.preventDefault();
+  });
+
+  c.addEventListener('mousemove', e => {
+    if (!SM || !SC) return;
+    const mx = evtX(e);
+    const doy = xToDOY(mx);
+
+    if (isDragging) {
+      drawSeason({ fromDOY: Math.min(dragStart, doy), toDOY: Math.max(dragStart, doy) });
+    } else {
+      // Hover tooltip
+      const d = doy;
+      const val = SC.avgCurve[Math.min(d, 364)];
+      const ret = val - 100;
+      const { month, day } = doyToMonthDay(d);
+
+      // Find individual year values at this DOY
+      const yearVals = SC.yearCurves
+        ? SC.yearCurves.map(yc => ({ year: yc.year, val: yc.pts[d] })).filter(v => v.val !== null)
+        : [];
+
+      const rows = [
+        ['Datum', MONTH_NAMES[month] + ' ' + day],
+        ['Ø Index', val.toFixed(2), val >= 100 ? 'pos' : 'neg'],
+        ['Kum. Rendite', (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%', ret >= 0 ? 'pos' : 'neg'],
+        ['Tag', (d + 1) + '/365'],
+      ];
+
+      showTooltip(e, MONTH_NAMES[month] + ' ' + day, rows);
+    }
+  });
+
+  c.addEventListener('mouseup', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    const doy = xToDOY(evtX(e));
+    const from = Math.min(dragStart, doy);
+    const to   = Math.max(dragStart, doy);
+    if (to - from < 3) { clearSeasonRange(); return; }
+    activeRange = { fromDOY: from, toDOY: to };
+    drawSeason(activeRange);
+    showRangeKPIs(from, to);
+    syncInputsToRange(from, to);
+    document.getElementById('btnClearRange').style.display = 'inline-block';
+    document.getElementById('srkStrip').classList.add('on');
+  });
+
+  c.addEventListener('mouseleave', () => { if (!isDragging) hideTooltip(); });
+
+  c.addEventListener('touchstart', e => {
+    if (!SM || !SC) return;
+    isDragging = true; dragStart = xToDOY(evtX(e)); e.preventDefault();
+  }, { passive: false });
+  c.addEventListener('touchmove', e => {
+    if (!isDragging || !SM) return;
+    drawSeason({ fromDOY: Math.min(dragStart, xToDOY(evtX(e))), toDOY: Math.max(dragStart, xToDOY(evtX(e))) });
+    e.preventDefault();
+  }, { passive: false });
+  c.addEventListener('touchend', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    const doy = xToDOY({ clientX: e.changedTouches[0].clientX, touches: null } );
+    const from = Math.min(dragStart, doy), to = Math.max(dragStart, doy);
+    if (to - from < 3) { clearSeasonRange(); return; }
+    activeRange = { fromDOY: from, toDOY: to };
+    drawSeason(activeRange); showRangeKPIs(from, to);
+    syncInputsToRange(from, to);
+    document.getElementById('btnClearRange').style.display = 'inline-block';
+    document.getElementById('srkStrip').classList.add('on');
+  });
+}
+
+function syncInputsToRange(fromDOY, toDOY) {
+  const f = doyToMonthDay(fromDOY), t = doyToMonthDay(toDOY);
+  document.getElementById('fromDay').value   = f.day;
+  document.getElementById('fromMonth').value = f.month;
+  document.getElementById('toDay').value     = t.day;
+  document.getElementById('toMonth').value   = t.month;
+}
+
+function applyInputRange() {
+  if (!SC) { showToast('Bitte zuerst ein Asset analysieren.'); return; }
+  const from = mDayToDOY(+document.getElementById('fromMonth').value, +document.getElementById('fromDay').value || 1);
+  const to   = mDayToDOY(+document.getElementById('toMonth').value,   +document.getElementById('toDay').value   || 28);
+  const f = Math.min(from, to), t = Math.max(from, to);
+  if (t - f < 1) { showToast('Bitte einen gültigen Zeitraum wählen.'); return; }
+  activeRange = { fromDOY: f, toDOY: t };
+  drawSeason(activeRange);
+  showRangeKPIs(f, t);
+  document.getElementById('btnClearRange').style.display = 'inline-block';
+  document.getElementById('srkStrip').classList.add('on');
+}
+
+function clearSeasonRange() {
+  activeRange = null;
+  document.getElementById('srkStrip').classList.remove('on');
+  document.getElementById('btnClearRange').style.display = 'none';
+  if (SC) drawSeason(null);
+}
+
+function showRangeKPIs(fromDOY, toDOY) {
+  if (!SC) return;
+
+  let yrs;
+  if (SC.mode === 'daily' && SC.yearCurves && SC.yearCurves.length) {
+    yrs = yearRangeReturnsDaily(SC.yearCurves, fromDOY, toDOY);
+  } else {
+    yrs = yearRangeReturns(SC.monthlyData, fromDOY, toDOY);
+  }
+
+  if (!yrs.length) return;
+  const rets = yrs.map(y => y.ret);
+  const avg  = rets.reduce((s,v)=>s+v,0) / rets.length;
+  const wins = rets.filter(r=>r>0).length;
+  const wr   = wins/rets.length*100;
+  const best  = yrs.reduce((a,b)=>b.ret>a.ret?b:a);
+  const worst = yrs.reduce((a,b)=>b.ret<a.ret?b:a);
+  const days = Math.max(toDOY - fromDOY, 1);
+  const variance = rets.reduce((s,v)=>s+Math.pow(v-avg,2),0)/Math.max(rets.length-1,1);
+  const stddev = Math.sqrt(variance);
+  // Annualisierung: Renditen auf Jahresbasis skalieren, Stddev mit sqrt(365/days)
+  const annFactor = 365 / days;
+  const annAvg    = avg    * annFactor;
+  const annStddev = stddev * Math.sqrt(annFactor);
+  const sharpe = annStddev > 0 ? annAvg / annStddev : 0;
+
+  document.getElementById('srkPeriod').textContent = doyLabel(fromDOY)+' → '+doyLabel(toDOY);
+  document.getElementById('srkDays').textContent   = (toDOY-fromDOY)+' Tage';
+  const rEl = document.getElementById('srkReturn');
+  rEl.textContent = (avg>=0?'+':'')+avg.toFixed(2)+'%';
+  rEl.className = 'srk-num '+(avg>=0?'pos':'neg');
+  document.getElementById('srkWin').textContent    = wr.toFixed(0)+'%';
+  document.getElementById('srkWinSub').textContent = wins+' von '+rets.length+' Jahren positiv';
+  document.getElementById('srkBest').textContent   = (best.ret >= 0 ? '+' : '') + best.ret.toFixed(2)+'%';
+  document.getElementById('srkBestY').textContent  = best.year;
+  document.getElementById('srkWorst').textContent  = worst.ret.toFixed(2)+'%';
+  document.getElementById('srkWorstY').textContent = worst.year;
+  const sEl = document.getElementById('srkSharpe');
+  sEl.textContent = sharpe.toFixed(3);
+  sEl.className = 'srk-num '+(sharpe>=0.5?'pos':sharpe<0?'neg':'');
+}
+
+// Legacy fallback for monthly-based KPIs
+function yearRangeReturns(monthlyData, fromDOY, toDOY) {
+  const fm = doyToMonthDay(fromDOY).month;
+  const tm = doyToMonthDay(Math.min(toDOY, 364)).month;
+  const byYear = {};
+  monthlyData.forEach(d => {
+    if (!byYear[d.year]) byYear[d.year] = Array(12).fill(null);
+    byYear[d.year][d.month] = d.ret;
+  });
+  const out = [];
+  Object.entries(byYear).forEach(([yr, months]) => {
+    let s = fm, e = tm >= fm ? tm : 11;
+    let cum = 0, n = 0;
+    for (let m = s; m <= e; m++) {
+      if (months[m] !== null) { cum += months[m]; n++; }
+    }
+    if (n > 0) out.push({ year: +yr, ret: cum });
+  });
+  return out;
+}
+
+// (dead code removed — seasonal chart is handled by drawSeason / SC / SM above)
+
+
+
+
+let _mouseX = 0, _mouseY = 0;
+document.addEventListener('mousemove', e => { _mouseX = e.clientX; _mouseY = e.clientY; });
+
+function showTooltip(e, title, rows) {
+  tooltipEl.querySelector('#ttTitle').textContent = title;
+  const body = tooltipEl.querySelector('#ttBody');
+  body.innerHTML = '';
+  rows.forEach(([key, val, cls]) => {
+    body.innerHTML += `<div class="tt-row"><span class="tt-key">${key}</span><span class="tt-val ${cls||''}">${val}</span></div>`;
+  });
+  tooltipEl.classList.add('visible');
+  positionTooltip();
+}
+
+function moveTooltip() { positionTooltip(); }
+function hideTooltip() { tooltipEl.classList.remove('visible'); }
+
+function positionTooltip() {
+  const tw = tooltipEl.offsetWidth || 160;
+  const th = tooltipEl.offsetHeight || 80;
+  let x = _mouseX + 14;
+  let y = _mouseY - th - 10;
+  if (x + tw > window.innerWidth - 10) x = _mouseX - tw - 14;
+  if (y < 10) y = _mouseY + 14;
+  tooltipEl.style.left = x + 'px';
+  tooltipEl.style.top = y + 'px';
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg, success = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (success ? ' success' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// Resize redraw
+window.addEventListener('resize', () => {
+  if (currentData) {
+    const stats = computeStats(currentData.monthlyData);
+    drawHistogram(stats.rets);
+    drawDistSparkline();
+    if (SC) drawSeason(SC.range || null);
+  }
+});
+</script>
+</body>
+</html>
