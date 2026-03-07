@@ -91,6 +91,10 @@ nav {
 .upload-text { font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);line-height:1.5; }
 .upload-text strong { display:block;color:var(--navy);font-size:11px;margin-bottom:1px; }
 #fileInput { display:none; }
+.upload-zone.loading { cursor:default; animation: pulse 1.5s ease-in-out infinite; }
+.upload-zone.loaded  { border-color:rgba(30,107,58,.4); background:rgba(30,107,58,.03); cursor:pointer; }
+.upload-zone.error   { border-color:rgba(139,26,26,.4); background:rgba(139,26,26,.03); cursor:pointer; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
 
 /* Header tabs */
 .hdr-tabs { display:flex; }
@@ -524,13 +528,13 @@ canvas.chart-c { width:100%;display:block;cursor:crosshair; }
       <div class="hdr-title">Positioning Pressure Model</div>
       <div class="hdr-sub">Flow Pressure · Crowding · Reversal Term — drei Dimensionen des institutionellen Drucks</div>
     </div>
-    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-      <div class="upload-icon">📂</div>
-      <div class="upload-text">
-        <strong>CSV hochladen</strong>
-        CFTC Legacy Futures Only
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon" id="uploadIcon">⏳</div>
+      <div class="upload-text" id="uploadText">
+        <strong id="uploadTitle">Daten werden geladen…</strong>
+        <span id="uploadSub">CFTC COT — bitte warten</span>
       </div>
-      <input type="file" id="fileInput" accept=".csv,.txt" multiple>
+      <input type="file" id="fileInput" accept=".csv,.txt" multiple style="display:none">
     </div>
   </div>
   <div class="hdr-tabs">
@@ -988,7 +992,75 @@ function setGroup(g) {
 }
 
 // ─────────────────────────────────────────────
-// UPLOAD + CSV PARSE
+// GitHub RAW BASE — update with your repo
+// Format: https://raw.githubusercontent.com/USERNAME/REPO/main/data/cot
+// ─────────────────────────────────────────────
+const GITHUB_RAW = 'https://raw.githubusercontent.com/JohannFX/strattrecs-tools/main/data/cot';
+
+function getCotYears() {
+  const cur = new Date().getFullYear();
+  const years = [];
+  for (let y = 2019; y <= cur; y++) years.push(y);
+  return years;
+}
+
+// ─────────────────────────────────────────────
+// AUTO-LOAD: fetch all years from GitHub
+// ─────────────────────────────────────────────
+async function autoLoadCOT() {
+  const zone  = document.getElementById('uploadZone');
+  const icon  = document.getElementById('uploadIcon');
+  const title = document.getElementById('uploadTitle');
+  const sub   = document.getElementById('uploadSub');
+
+  zone.classList.add('loading');
+  zone.onclick = null;
+
+  const years = getCotYears();
+  sub.textContent = `Lade ${years.length} Jahre von GitHub…`;
+
+  try {
+    // Fetch all years in parallel
+    const results = await Promise.all(
+      years.map(async year => {
+        const url = `${GITHUB_RAW}/${year}.csv`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`${year}: HTTP ${resp.status}`);
+        return resp.text();
+      })
+    );
+
+    // Merge: first file with header, rest without header line
+    let merged = '';
+    results.forEach((csv, i) => {
+      if (!csv || csv.length < 10) return;
+      const lines = csv.split('\n');
+      merged += i === 0 ? lines.join('\n') : '\n' + lines.slice(1).join('\n');
+    });
+
+    parseCSV(merged);
+
+    zone.classList.remove('loading');
+    zone.classList.add('loaded');
+    icon.textContent  = '✓';
+    title.textContent = 'Daten geladen';
+    sub.textContent   = `${years[0]}–${years[years.length-1]} · Klick zum Aktualisieren`;
+    zone.onclick = () => document.getElementById('fileInput').click();
+
+  } catch (err) {
+    console.error('Auto-load failed:', err);
+    zone.classList.remove('loading');
+    zone.classList.add('error');
+    icon.textContent  = '📂';
+    title.textContent = 'Manuell hochladen';
+    sub.textContent   = 'Auto-Load fehlgeschlagen — CSV-Dateien hier ablegen';
+    zone.onclick = () => document.getElementById('fileInput').click();
+    toast(`Auto-Load fehlgeschlagen — bitte GITHUB_RAW URL prüfen`, true);
+  }
+}
+
+// ─────────────────────────────────────────────
+// MANUAL UPLOAD (fallback)
 // ─────────────────────────────────────────────
 document.getElementById('fileInput').addEventListener('change', e => {
   const files = [...e.target.files]; if(!files.length)return;
@@ -1010,6 +1082,12 @@ dz.addEventListener('drop',e=>{
   let buf='',done=0;
   files.forEach(f=>{const r=new FileReader();r.onload=ev=>{buf+=ev.target.result+'\n';if(++done===files.length)parseCSV(buf);};r.readAsText(f);});
 });
+
+// ─────────────────────────────────────────────
+// STARTUP: auto-load on page open
+// ─────────────────────────────────────────────
+// Slight delay so UI renders first
+setTimeout(autoLoadCOT, 300);
 
 function splitLine(l) {
   const r=[];let c='',q=false;
