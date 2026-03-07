@@ -1,0 +1,59 @@
+name: Update COT Data
+
+on:
+  schedule:
+    # Every Friday at 18:00 UTC (CFTC publishes ~15:30 ET = ~20:30 UTC, we wait a bit)
+    - cron: '0 20 * * 5'
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  update-cot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download & extract CFTC COT data
+        run: |
+          mkdir -p data/cot
+          CURRENT_YEAR=$(date +%Y)
+
+          for YEAR in $(seq 2019 $CURRENT_YEAR); do
+            ZIP_URL="https://www.cftc.gov/files/dea/history/fut_fin_txt_${YEAR}.zip"
+            OUT_FILE="data/cot/${YEAR}.csv"
+
+            echo "Downloading $YEAR..."
+            HTTP_STATUS=$(curl -s -o /tmp/cot_${YEAR}.zip -w "%{http_code}" "$ZIP_URL")
+
+            if [ "$HTTP_STATUS" = "200" ]; then
+              # Extract CSV from ZIP
+              unzip -o /tmp/cot_${YEAR}.zip -d /tmp/cot_${YEAR}/
+              # Find the CSV file (name varies)
+              CSV_FILE=$(find /tmp/cot_${YEAR}/ -name "*.txt" -o -name "*.csv" | head -1)
+              if [ -n "$CSV_FILE" ]; then
+                cp "$CSV_FILE" "$OUT_FILE"
+                echo "  ✓ $YEAR saved ($(wc -l < $OUT_FILE) lines)"
+              else
+                echo "  ✗ $YEAR: no CSV found in ZIP"
+              fi
+            else
+              echo "  ✗ $YEAR: HTTP $HTTP_STATUS"
+            fi
+          done
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/cot/
+          if git diff --staged --quiet; then
+            echo "No changes — data already up to date"
+          else
+            TODAY=$(date +%Y-%m-%d)
+            git commit -m "chore: update COT data $TODAY"
+            git push
+            echo "✓ COT data updated and pushed"
+          fi
