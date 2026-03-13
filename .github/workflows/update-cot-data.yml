@@ -54,24 +54,24 @@ jobs:
           done
 
       - name: Commit & push if changed
-  shell: bash
-  run: |
-    set -euo pipefail
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    git config user.name "github-actions[bot]"
-    git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    git add data/cot/
+          git add data/cot/
 
-    if git diff --staged --quiet; then
-      echo "No changes — data already up to date"
-    else
-      TODAY=$(date -u +%Y-%m-%d)
-      git commit -m "chore: update COT data ${TODAY}"
+          if git diff --staged --quiet; then
+            echo "No changes — data already up to date"
+          else
+            TODAY=$(date -u +%Y-%m-%d)
+            git commit -m "chore: update COT data ${TODAY}"
 
-      git fetch origin main
-      git rebase origin/main
-      git push origin HEAD:main
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
 
-      echo "COT data updated and pushed"
-    fi
+            echo "COT data updated and pushed"
+          fi
