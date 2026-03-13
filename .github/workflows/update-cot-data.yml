@@ -2,9 +2,8 @@ name: Update COT Data
 
 on:
   schedule:
-    # Every Friday at 18:00 UTC (CFTC publishes ~15:30 ET = ~20:30 UTC, we wait a bit)
     - cron: '0 20 * * 5'
-  workflow_dispatch: # allow manual trigger
+  workflow_dispatch:
 
 jobs:
   update-cot:
@@ -17,43 +16,58 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download & extract CFTC COT data
+        shell: bash
         run: |
-          mkdir -p data/cot
-          CURRENT_YEAR=$(date +%Y)
+          set -euo pipefail
 
-          for YEAR in $(seq 2019 $CURRENT_YEAR); do
-            ZIP_URL="https://www.cftc.gov/files/dea/history/fut_fin_txt_${YEAR}.zip"
+          mkdir -p data/cot
+          CURRENT_YEAR=$(date -u +%Y)
+
+          for YEAR in $(seq 2019 "$CURRENT_YEAR"); do
+            ZIP_URL="https://www.cftc.gov/files/dea/history/deacot${YEAR}.zip"
+            TMP_ZIP="/tmp/cot_${YEAR}.zip"
+            TMP_DIR="/tmp/cot_${YEAR}"
             OUT_FILE="data/cot/${YEAR}.csv"
 
-            echo "Downloading $YEAR..."
-            HTTP_STATUS=$(curl -s -o /tmp/cot_${YEAR}.zip -w "%{http_code}" "$ZIP_URL")
+            echo "Downloading ${YEAR} from ${ZIP_URL}"
+            rm -rf "$TMP_DIR"
+            mkdir -p "$TMP_DIR"
 
-            if [ "$HTTP_STATUS" = "200" ]; then
-              # Extract CSV from ZIP
-              unzip -o /tmp/cot_${YEAR}.zip -d /tmp/cot_${YEAR}/
-              # Find the CSV file (name varies)
-              CSV_FILE=$(find /tmp/cot_${YEAR}/ -name "*.txt" -o -name "*.csv" | head -1)
-              if [ -n "$CSV_FILE" ]; then
-                cp "$CSV_FILE" "$OUT_FILE"
-                echo "  ✓ $YEAR saved ($(wc -l < $OUT_FILE) lines)"
-              else
-                echo "  ✗ $YEAR: no CSV found in ZIP"
-              fi
-            else
-              echo "  ✗ $YEAR: HTTP $HTTP_STATUS"
+            HTTP_STATUS=$(curl -L --silent --show-error --output "$TMP_ZIP" --write-out "%{http_code}" "$ZIP_URL")
+
+            if [ "$HTTP_STATUS" != "200" ]; then
+              echo "ERROR: ${YEAR} download failed with HTTP ${HTTP_STATUS}"
+              exit 1
             fi
+
+            unzip -o "$TMP_ZIP" -d "$TMP_DIR" >/dev/null
+
+            DATA_FILE=$(find "$TMP_DIR" \( -iname "*.txt" -o -iname "*.csv" \) | head -n 1)
+
+            if [ -z "${DATA_FILE}" ]; then
+              echo "ERROR: ${YEAR} ZIP contained no .txt or .csv file"
+              exit 1
+            fi
+
+            cp "$DATA_FILE" "$OUT_FILE"
+            echo "Saved ${OUT_FILE} ($(wc -l < "$OUT_FILE") lines)"
           done
 
       - name: Commit & push if changed
+        shell: bash
         run: |
-          git config user.name  "github-actions[bot]"
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add data/cot/
+
           if git diff --staged --quiet; then
             echo "No changes — data already up to date"
           else
-            TODAY=$(date +%Y-%m-%d)
-            git commit -m "chore: update COT data $TODAY"
+            TODAY=$(date -u +%Y-%m-%d)
+            git commit -m "chore: update COT data ${TODAY}"
             git push
-            echo "✓ COT data updated and pushed"
+            echo "COT data updated and pushed"
           fi
