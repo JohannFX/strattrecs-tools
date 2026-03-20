@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StratTrecs — Modell A · Zinsdifferenz-Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600&family=Source+Sans+3:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:#141414;--bg2:#1a1a1a;--surface:#1e1e1e;--surface2:#252525;--surface3:#2a2a2a;
+  --border:#2d2d2d;--border2:#383838;
+  --text:#e8e6e3;--text-mid:#999590;--text-dim:#666360;
+  --green:#1e6b3a;--green-l:#3ddc84;--red:#8b1a1a;--red-l:#e05252;
+  --amber:#b8963e;--amber-l:#d4af62;--navy:#1a3a5c;--navy2:#2d5a8e;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Source Sans 3',sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.app{max-width:1320px;margin:0 auto;padding:0 28px}
+
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(20,20,20,.92);backdrop-filter:blur(12px);margin:0 -28px;padding-left:28px;padding-right:28px}
+.logo{font-family:'Source Code Pro',monospace;font-size:13px;font-weight:600;color:var(--text);letter-spacing:.04em}
+.logo span{color:var(--text-dim);font-weight:400;font-size:11px;margin-left:4px}
+.hdr-r{display:flex;align-items:center;gap:14px}
+.status{display:flex;align-items:center;gap:6px;font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);letter-spacing:.03em}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green-l);animation:pulse 2s infinite}
+.status-dot.err{background:var(--red-l);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-refresh{padding:5px 14px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text-mid);font-family:'Source Code Pro',monospace;font-size:10px;cursor:pointer;transition:all .2s;letter-spacing:.03em}
+.btn-refresh:hover{border-color:var(--green);color:var(--green-l)}
+
+.model-banner{margin-top:20px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:4px}
+.mb-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.mb-title{font-family:'Source Code Pro',monospace;font-size:11px;font-weight:600;color:var(--green-l);letter-spacing:.06em;text-transform:uppercase}
+.mb-ver{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);padding:2px 7px;border:1px solid var(--border2);border-radius:2px}
+.mb-weights{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.mb-w{font-family:'Source Code Pro',monospace;font-size:10px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--text-dim)}
+.mb-w b{color:var(--text);font-weight:600}
+.mb-perf{display:flex;gap:18px;flex-wrap:wrap}
+.mb-p{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim)}
+.mb-p b{font-weight:600}
+.mb-note{font-size:10px;color:var(--text-dim);margin-top:8px;font-family:'Source Code Pro',monospace;letter-spacing:.02em}
+
+.sec{margin-top:28px}
+.sec-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sec-tag{font-family:'Source Code Pro',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:2px}
+.sec-tag.s1{color:var(--navy2);background:rgba(45,90,142,.12);border:1px solid rgba(45,90,142,.2)}
+.sec-tag.s2{color:var(--green-l);background:rgba(30,107,58,.12);border:1px solid rgba(30,107,58,.2)}
+.sec-tag.s3{color:var(--amber-l);background:rgba(184,150,62,.12);border:1px solid rgba(184,150,62,.2)}
+.sec-tag.sig{color:var(--red-l);background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.15)}
+.sec-title{font-family:'Source Sans 3',sans-serif;font-size:15px;font-weight:600;color:var(--text)}
+.sec-sub{font-size:11px;color:var(--text-dim);margin-left:auto;font-family:'Source Code Pro',monospace}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+.rate-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:10px}
+.rate-row:last-child{border-bottom:none}
+.rr-pair{font-family:'Source Code Pro',monospace;font-size:12px;font-weight:600;min-width:75px;color:var(--text)}
+.rr-info{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);min-width:130px}
+.rr-bar{flex:1;height:4px;background:var(--surface2);border-radius:2px;position:relative}
+.rr-fill{height:100%;border-radius:2px;position:absolute;transition:width .6s ease}
+.rr-fill.pos{left:50%;background:var(--green-l)}.rr-fill.neg{right:50%;background:var(--red-l)}
+.rr-center{position:absolute;left:50%;top:-3px;width:1px;height:10px;background:var(--border2)}
+.rr-val{font-family:'Source Code Pro',monospace;font-size:12px;font-weight:600;min-width:55px;text-align:right}
+.rr-dir{font-family:'Source Code Pro',monospace;font-size:9px;font-weight:600;letter-spacing:.04em;min-width:65px;text-align:center;padding:2px 6px;border-radius:2px}
+
+.mom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.mom-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px;text-align:center}
+.mom-name{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);letter-spacing:.04em;margin-bottom:6px}
+.mom-val{font-family:'Source Code Pro',monospace;font-size:20px;font-weight:600;line-height:1}
+.mom-ccy{font-family:'Source Code Pro',monospace;font-size:9px;color:var(--text-dim);margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
+.mom-delta{font-family:'Source Code Pro',monospace;font-size:11px;margin-top:6px}
+
+.sig-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:6px;border-left:3px solid transparent;transition:all .15s}
+.sig-row:hover{background:var(--surface2)}
+.sig-row.buy{border-left-color:var(--green-l)}.sig-row.sell{border-left-color:var(--red-l)}.sig-row.watch{border-left-color:var(--amber)}
+.sig-pair{font-family:'Source Code Pro',monospace;font-size:13px;font-weight:600;min-width:75px}
+.sig-layers{display:flex;gap:5px;flex:1;flex-wrap:wrap}
+.sig-chip{font-family:'Source Code Pro',monospace;font-size:9px;font-weight:500;padding:2px 6px;border-radius:2px;letter-spacing:.02em}
+.sig-badge{font-family:'Source Code Pro',monospace;font-size:10px;font-weight:600;padding:3px 10px;border-radius:2px;letter-spacing:.06em}
+.b-buy{background:rgba(30,107,58,.15);color:var(--green-l);border:1px solid rgba(30,107,58,.25)}
+.b-sell{background:rgba(139,26,26,.15);color:var(--red-l);border:1px solid rgba(139,26,26,.25)}
+.b-watch{background:rgba(184,150,62,.12);color:var(--amber-l);border:1px solid rgba(184,150,62,.2)}
+.sig-conf{font-family:'Source Code Pro',monospace;font-size:13px;font-weight:600;min-width:65px;text-align:right;letter-spacing:1px}
+.sig-score{font-family:'Source Code Pro',monospace;font-size:10px;color:var(--text-dim);min-width:45px;text-align:right}
+
+.ld{display:flex;align-items:center;justify-content:center;padding:30px;color:var(--text-dim);font-size:12px;gap:8px;font-family:'Source Code Pro',monospace}
+.sp{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--green-l);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.disc{text-align:center;padding:24px 28px;font-size:10px;color:var(--text-dim);border-top:1px solid var(--border);margin-top:32px;line-height:1.6;font-family:'Source Code Pro',monospace;letter-spacing:.02em}
+@media(max-width:900px){.g2{grid-template-columns:1fr}.mom-grid{grid-template-columns:repeat(3,1fr)}.app{padding:0 16px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">StratTrecs <span>// Modell A · Zinsdifferenz-Engine</span></div>
+  <div class="hdr-r">
+    <div class="status" id="status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Initialisiere...</span>
+    </div>
+    <button class="btn-refresh" onclick="loadAll()">↻ Aktualisieren</button>
+  </div>
+</header>
+
+<div class="model-banner">
+  <div class="mb-top">
+    <span class="mb-title">Optimiertes Scoring aktiv</span>
+    <span class="mb-ver">v2.1 · Grid Search</span>
+  </div>
+  <div class="mb-weights">
+    <div class="mb-w">S1 Leitzins: <b>0.50</b></div>
+    <div class="mb-w">S2 Rendite: <b>0.50</b></div>
+    <div class="mb-w">S3 Momentum: <b>0.25</b></div>
+    <div class="mb-w">Zinskurve: <b>0.35</b></div>
+    <div class="mb-w">Schwellen: <b>0.7% / 0.7% / 3bp</b></div>
+    <div class="mb-w">Signal: <b>±0.7</b></div>
+  </div>
+  <div class="mb-perf" id="mbPerf"></div>
+  <div class="mb-note">Optimiert über 81.000 Kombinationen · Walk-Forward Validation (60/40) · 10 Szenarien validiert · Daten: FRED API (live)</div>
+</div>
+
+<!-- SIGNALS -->
+<div class="sec">
+  <div class="sec-head">
+    <span class="sec-tag sig">Synthese</span>
+    <span class="sec-title">Drei-Schichten-Signale</span>
+    <span class="sec-sub">Konfluenz aller Schichten → höchste Konfidenz</span>
+  </div>
+  <div id="SIG"><div class="ld"><div class="sp"></div> Warte auf FRED-Daten...</div></div>
+</div>
+
+<!-- LAYER 1 + LAYER 2 -->
+<div class="g2" style="margin-top:28px">
+  <div>
+    <div class="sec-head"><span class="sec-tag s1">Schicht 1</span><span class="sec-title">Leitzins-Differentiale</span></div>
+    <div class="card" id="L1"><div class="ld"><div class="sp"></div> Lade FRED-Daten...</div></div>
+  </div>
+  <div>
+    <div class="sec-head"><span class="sec-tag s2">Schicht 2</span><span class="sec-title">Rendite-Spreads</span></div>
+    <div class="card" id="L2"><div class="ld"><div class="sp"></div> Lade FRED-Daten...</div></div>
+  </div>
+</div>
+
+<!-- YIELD CURVE + MOMENTUM -->
+<div class="g2" style="margin-top:14px">
+  <div>
+    <div class="sec-head"><span class="sec-tag s2">Schicht 2</span><span class="sec-title">US-Zinskurve</span></div>
+    <div class="card"><div style="position:relative;height:200px"><canvas id="ycCanvas"></canvas></div></div>
+  </div>
+  <div>
+    <div class="sec-head"><span class="sec-tag s3">Schicht 3</span><span class="sec-title">Rendite-Momentum (Δ Woche)</span></div>
+    <div class="mom-grid" id="L3"><div class="ld" style="grid-column:1/-1"><div class="sp"></div> Berechne...</div></div>
+  </div>
+</div>
+
+<div class="disc">⚠ Bildungs- und Analysezwecke. Keine Anlageberatung. · Daten: FRED (Federal Reserve Bank of St. Louis) · Frankfurter API (EZB) · Kein Backend — alle Berechnungen laufen im Browser.</div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// MODELL A v2.1 — VOLLSTÄNDIG IM BROWSER
+// Portiert von app.py (Python/FastAPI) nach JavaScript
+// ═══════════════════════════════════════════════════════
+
+const $ = id => document.getElementById(id);
+const FRED_KEY = '5818c46a9196595534e676332c9b48f8';
+const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
+
+// ── CONFIGURATION ──
+const PAIRS = [
+  {pair:'EUR/USD', base:'EUR', quote:'USD', is_usd_quote:true},
+  {pair:'GBP/USD', base:'GBP', quote:'USD', is_usd_quote:true},
+  {pair:'USD/JPY', base:'USD', quote:'JPY', is_usd_quote:false},
+  {pair:'AUD/USD', base:'AUD', quote:'USD', is_usd_quote:true},
+  {pair:'USD/CAD', base:'USD', quote:'CAD', is_usd_quote:false},
+  {pair:'NZD/USD', base:'NZD', quote:'USD', is_usd_quote:true},
+  {pair:'USD/CHF', base:'USD', quote:'CHF', is_usd_quote:false},
+];
+
+const FRED_SERIES = {
+  FEDFUNDS:'Fed Funds Rate', ECBMRRFR:'EZB Hauptrefinanzierungssatz',
+  IRSTCI01JPM156N:'Japan Overnight (BOJ)', IRSTCI01CHM156N:'Schweiz Overnight (SNB)',
+  DGS3MO:'US 3M Treasury', DGS1:'US 1J Treasury', DGS2:'US 2J Treasury',
+  DGS5:'US 5J Treasury', DGS10:'US 10J Treasury', DGS30:'US 30J Treasury',
+  T10Y2Y:'Zinskurve 10J−2J', T10Y3M:'Zinskurve 10J−3M',
+  IRLTLT01DEM156N:'DE 10J', IRLTLT01GBM156N:'UK 10J', IRLTLT01JPM156N:'JP 10J',
+  IR3TIB01DEM156N:'DE 3M Interbank', IR3TIB01GBM156N:'UK 3M Interbank',
+  IR3TIB01JPM156N:'JP 3M Interbank', IR3TIB01CHM156N:'CH 3M Interbank',
+  IR3TIB01AUM156N:'AU 3M Interbank', IR3TIB01CAM156N:'CA 3M Interbank',
+  IR3TIB01NZM156N:'NZ 3M Interbank',
+};
+
+const POLICY_RATE_SERIES = {
+  USD:'FEDFUNDS', EUR:'ECBMRRFR', JPY:'IRSTCI01JPM156N', CHF:'IRSTCI01CHM156N',
+  GBP:'IR3TIB01GBM156N', AUD:'IR3TIB01AUM156N', CAD:'IR3TIB01CAM156N', NZD:'IR3TIB01NZM156N',
+};
+
+const SHORT_RATE_SERIES = {
+  USD:'DGS2', EUR:'IR3TIB01DEM156N', GBP:'IR3TIB01GBM156N', JPY:'IR3TIB01JPM156N',
+  CHF:'IR3TIB01CHM156N', AUD:'IR3TIB01AUM156N', CAD:'IR3TIB01CAM156N', NZD:'IR3TIB01NZM156N',
+};
+
+const POLICY_FALLBACK = {
+  USD:{rate:5.25,bank:'Fed'}, EUR:{rate:4.50,bank:'EZB'}, GBP:{rate:5.25,bank:'BOE'},
+  JPY:{rate:0.25,bank:'BOJ'}, AUD:{rate:4.35,bank:'RBA'}, CAD:{rate:5.00,bank:'BOC'},
+  NZD:{rate:5.50,bank:'RBNZ'}, CHF:{rate:1.75,bank:'SNB'},
+};
+
+// Optimierte Gewichtungen (Grid Search v2.1)
+const W1=0.50, W2=0.50, W3=0.25, W_CURVE=0.35;
+const TH1=0.7, TH2=0.7, TH3=3, TH_CURVE=0.2, SIGNAL_TH=0.7;
+
+// ── FRED DATA FETCHER ──
+const fredCache = {};
+
+async function fetchFred(seriesId, limit=60) {
+  const key = `${seriesId}_${limit}`;
+  if (fredCache[key] && (Date.now() - fredCache[key].ts) < 1800000) return fredCache[key].data;
+
+  const url = `${FRED_BASE}?series_id=${seriesId}&api_key=${FRED_KEY}&file_type=json&sort_order=desc&limit=${limit}`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    const obs = (json.observations || [])
+      .filter(o => o.value !== '.')
+      .map(o => ({date: o.date, value: parseFloat(o.value)}));
+    fredCache[key] = {ts: Date.now(), data: obs};
+    return obs;
+  } catch(e) {
+    console.warn(`FRED ${seriesId}: ${e.message}`);
+    return fredCache[key] ? fredCache[key].data : [];
+  }
+}
+
+async function fetchAllFred() {
+  const ids = Object.keys(FRED_SERIES);
+  const promises = ids.map(id => fetchFred(id, 60));
+  const results = await Promise.all(promises);
+  const out = {};
+  ids.forEach((id, i) => out[id] = results[i]);
+  return out;
+}
+
+// ── MODEL HELPERS ──
+function getObs(results, sid, asof) {
+  const obs = results[sid] || [];
+  for (const o of obs) {
+    if (o.date <= asof) return o;
+  }
+  return null;
+}
+
+function getObsPrev(results, sid, asof, days=7) {
+  const d = new Date(asof);
+  d.setDate(d.getDate() - days);
+  return getObs(results, sid, d.toISOString().slice(0,10));
+}
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+// ── COMPUTE MODEL ──
+function computeModel(results) {
+  const asof = todayStr();
+
+  // Schicht 1: Dynamic policy rates
+  const policyRates = {};
+  for (const [ccy, fb] of Object.entries(POLICY_FALLBACK)) {
+    policyRates[ccy] = {...fb, source:'fallback'};
+    const sid = POLICY_RATE_SERIES[ccy];
+    if (sid) {
+      const obs = getObs(results, sid, asof);
+      if (obs) { policyRates[ccy].rate = obs.value; policyRates[ccy].date = obs.date; policyRates[ccy].source = 'FRED'; }
+    }
+  }
+
+  const rateDiffs = PAIRS.map(p => {
+    const baseRate = policyRates[p.base].rate;
+    const quoteRate = policyRates[p.quote].rate;
+    const diff = Math.round((baseRate - quoteRate) * 100) / 100;
+    return {
+      ...p, base_rate: baseRate, quote_rate: quoteRate,
+      base_bank: policyRates[p.base].bank, quote_bank: policyRates[p.quote].bank,
+      diff, direction: diff > 0.3 ? 'BULLISH' : diff < -0.3 ? 'BEARISH' : 'NEUTRAL',
+    };
+  });
+
+  // Schicht 2: Yield spreads
+  const yieldSpreads = [];
+  for (const p of PAIRS) {
+    const bSid = SHORT_RATE_SERIES[p.base], qSid = SHORT_RATE_SERIES[p.quote];
+    if (bSid && qSid) {
+      const bObs = getObs(results, bSid, asof), qObs = getObs(results, qSid, asof);
+      if (bObs && qObs) {
+        yieldSpreads.push({
+          name: `${p.base} vs ${p.quote} kurzfristig`,
+          value: Math.round((bObs.value - qObs.value) * 100) / 100,
+          pair: p.pair, type: 'yield',
+        });
+      }
+    }
+  }
+
+  const curve10y2y = getObs(results, 'T10Y2Y', asof);
+  const curve10y3m = getObs(results, 'T10Y3M', asof);
+  if (curve10y2y) yieldSpreads.push({name:'Zinskurve 10J−2J', value:curve10y2y.value, pair:'USD', type:'curve'});
+  if (curve10y3m) yieldSpreads.push({name:'Zinskurve 10J−3M', value:curve10y3m.value, pair:'Rezession?', type:'curve'});
+
+  // Yield curve points
+  const ycPoints = [['DGS3MO','3M'],['DGS1','1J'],['DGS2','2J'],['DGS5','5J'],['DGS10','10J'],['DGS30','30J']].map(([sid,label]) => {
+    const v = getObs(results, sid, asof);
+    return {label, value: v ? v.value : null, date: v ? v.date : null};
+  });
+
+  // Schicht 3: Momentum
+  const momentum = [];
+  const spreadMomentum = {};
+
+  // Single rate momentum
+  [['US 2J','DGS2','USD'],['US 10J','DGS10','USD'],['DE 10J','IRLTLT01DEM156N','EUR'],
+   ['GB 10J','IRLTLT01GBM156N','GBP'],['JP 10J','IRLTLT01JPM156N','JPY']].forEach(([name,sid,ccy]) => {
+    const now = getObs(results, sid, asof), prev = getObsPrev(results, sid, asof);
+    if (now && prev) {
+      momentum.push({name, currency:ccy, current:now.value, previous:prev.value,
+        delta_bps: Math.round((now.value - prev.value) * 100), type:'single'});
+    }
+  });
+
+  // Spread momentum per pair
+  for (const p of PAIRS) {
+    const bSid = SHORT_RATE_SERIES[p.base], qSid = SHORT_RATE_SERIES[p.quote];
+    if (!bSid || !qSid) continue;
+    const bNow = getObs(results, bSid, asof), bPrev = getObsPrev(results, bSid, asof);
+    const qNow = getObs(results, qSid, asof), qPrev = getObsPrev(results, qSid, asof);
+    if (bNow && bPrev && qNow && qPrev) {
+      const spreadNow = bNow.value - qNow.value, spreadPrev = bPrev.value - qPrev.value;
+      const entry = {
+        name: `${p.base}−${p.quote} Spread`, currency: p.pair,
+        current: Math.round(spreadNow * 100) / 100, previous: Math.round(spreadPrev * 100) / 100,
+        delta_bps: Math.round((spreadNow - spreadPrev) * 100), type:'spread',
+      };
+      momentum.push(entry);
+      spreadMomentum[p.pair] = entry;
+    }
+  }
+
+  // ── SIGNAL GENERATION (v2.1 optimized) ──
+  const signals = [];
+  for (const rd of rateDiffs) {
+    let score = 0;
+    const layers = [];
+    const {pair, is_usd_quote} = rd;
+
+    // S1
+    const l1 = rd.diff;
+    const l1Dir = l1 > TH1 ? 'bullish' : l1 < -TH1 ? 'bearish' : 'neutral';
+    layers.push({layer:1, label:`S1: ${l1>0?'+':''}${l1}%`, direction:l1Dir});
+    score += l1 > TH1 ? W1 : l1 < -TH1 ? -W1 : 0;
+
+    // S2
+    const ms = yieldSpreads.find(s => s.type === 'yield' && s.pair === pair);
+    if (ms) {
+      const l2 = ms.value;
+      const l2Dir = l2 > TH2 ? 'bullish' : l2 < -TH2 ? 'bearish' : 'neutral';
+      score += l2 > TH2 ? W2 : l2 < -TH2 ? -W2 : 0;
+      layers.push({layer:2, label:`S2: ${l2>0?'+':''}${l2}%`, direction:l2Dir});
+    } else {
+      layers.push({layer:2, label:'S2: n/a', direction:'neutral'});
+    }
+
+    // S3
+    const sm = spreadMomentum[pair];
+    if (sm) {
+      const l3 = sm.delta_bps;
+      const l3Dir = l3 > TH3 ? 'bullish' : l3 < -TH3 ? 'bearish' : 'neutral';
+      score += l3 > TH3 ? W3 : l3 < -TH3 ? -W3 : 0;
+      layers.push({layer:3, label:`S3: ${l3>0?'+':''}${l3}bp`, direction:l3Dir});
+    } else {
+      layers.push({layer:3, label:'S3: n/a', direction:'neutral'});
+    }
+
+    // Curve bonus
+    if (curve10y2y) {
+      const cv = curve10y2y.value;
+      if (cv > TH_CURVE) score += is_usd_quote ? -W_CURVE : W_CURVE;
+      else if (cv < 0) score += is_usd_quote ? W_CURVE : -W_CURVE;
+    }
+
+    // Confidence
+    const abs = Math.abs(score);
+    const confidence = abs < 0.25 ? 1 : abs < 0.5 ? 2 : abs < 0.85 ? 3 : abs < 1.2 ? 4 : 5;
+    const signal = score > SIGNAL_TH ? 'BUY' : score < -SIGNAL_TH ? 'SELL' : 'WATCH';
+
+    signals.push({pair, signal, confidence, score: Math.round(score*100)/100, layers});
+  }
+
+  signals.sort((a,b) => Math.abs(b.score) - Math.abs(a.score));
+
+  return {
+    layer1: {policy_rates: policyRates, differentials: rateDiffs},
+    layer2: {yield_spreads: yieldSpreads, yield_curve: ycPoints},
+    layer3: {momentum},
+    signals,
+  };
+}
+
+// ── RENDER FUNCTIONS ──
+const colV = (v,th=0.3) => v>th?'var(--green-l)':v<-th?'var(--red-l)':'var(--amber-l)';
+const bgV = (v,th=0.3) => v>th?'rgba(30,107,58,.15)':v<-th?'rgba(139,26,26,.15)':'rgba(184,150,62,.12)';
+const sign = v => v>0?'+':'';
+let ycChart = null;
+
+function renderL1(data) {
+  $('L1').innerHTML = data.layer1.differentials.map(d => {
+    const pct = Math.min(50, Math.abs(d.diff)*8);
+    return `<div class="rate-row">
+      <span class="rr-pair">${d.pair}</span>
+      <span class="rr-info">${d.base_bank} ${d.base_rate.toFixed(2)}% − ${d.quote_bank} ${d.quote_rate.toFixed(2)}%</span>
+      <div class="rr-bar"><div class="rr-center"></div><div class="rr-fill ${d.diff>=0?'pos':'neg'}" style="width:${pct}%"></div></div>
+      <span class="rr-val" style="color:${colV(d.diff)}">${sign(d.diff)}${d.diff}%</span>
+      <span class="rr-dir" style="background:${bgV(d.diff)};color:${colV(d.diff)}">${d.direction}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderL2(data) {
+  const ys = data.layer2.yield_spreads;
+  if (!ys.length) { $('L2').innerHTML = '<div style="padding:16px;color:var(--text-dim);text-align:center">Keine Daten</div>'; return; }
+  $('L2').innerHTML = ys.map(s => {
+    const pct = Math.min(50, Math.abs(s.value)*7);
+    let signal, sCol;
+    if (s.type==='curve') {
+      signal = s.value<0?'⚠ INVERTIERT':s.value<0.5?'Flach':'Steil';
+      sCol = s.value<0?'var(--red-l)':s.value<0.5?'var(--amber-l)':'var(--green-l)';
+    } else {
+      signal = s.value>0.5?'BASE BULL':s.value<-0.5?'BASE BEAR':'NEUTRAL';
+      sCol = colV(s.value,0.5);
+    }
+    return `<div class="rate-row">
+      <span class="rr-pair" style="min-width:110px;font-size:10px">${s.name}</span>
+      <div class="rr-bar"><div class="rr-center"></div><div class="rr-fill ${s.value>=0?'pos':'neg'}" style="width:${pct}%"></div></div>
+      <span class="rr-val" style="color:${colV(s.value,0.5)}">${sign(s.value)}${s.value.toFixed(2)}%</span>
+      <span class="rr-dir" style="background:${bgV(s.value,0.5)};color:${sCol};font-size:9px">${signal}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderYC(data) {
+  const pts = data.layer2.yield_curve;
+  const labels = pts.map(p => p.label), values = pts.map(p => p.value||0);
+  const inv = values[4] < values[2];
+  if (ycChart) ycChart.destroy();
+  ycChart = new Chart($('ycCanvas'), {
+    type:'line',
+    data:{labels, datasets:[{label:'US Treasury', data:values,
+      borderColor:inv?'#e05252':'#3ddc84', backgroundColor:inv?'rgba(224,82,82,.06)':'rgba(61,220,132,.06)',
+      fill:true, tension:.4, pointRadius:4, pointBackgroundColor:inv?'#e05252':'#3ddc84',
+      pointBorderColor:'#1e1e1e', pointBorderWidth:2, borderWidth:2}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.y.toFixed(2)+'%'}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#666360', font:{size:10,family:'Source Code Pro'}}},
+        y:{grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#666360', font:{size:10,family:'Source Code Pro'}, callback:v=>v.toFixed(1)+'%'}}
+      }}
+  });
+}
+
+function renderL3(data) {
+  const mom = data.layer3.momentum.filter(m => m.type==='spread');
+  if (!mom.length) { $('L3').innerHTML = '<div style="grid-column:1/-1;padding:16px;color:var(--text-dim);text-align:center">Kein Momentum</div>'; return; }
+  $('L3').innerHTML = mom.map(m => {
+    const cls = m.delta_bps>3?'up':m.delta_bps<-3?'down':'flat';
+    const col = cls==='up'?'var(--green-l)':cls==='down'?'var(--red-l)':'var(--text-dim)';
+    const arrow = cls==='up'?'↑':cls==='down'?'↓':'→';
+    return `<div class="mom-card">
+      <div class="mom-name">${m.name}</div>
+      <div class="mom-val" style="color:${col}">${m.current.toFixed(2)}%</div>
+      <div class="mom-ccy">${m.currency}</div>
+      <div class="mom-delta">${arrow} <span style="color:${col}">${sign(m.delta_bps)}${m.delta_bps} bp/W</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSignals(data) {
+  const sigs = data.signals;
+  if (!sigs.length) { $('SIG').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim)">Keine Signale</div>'; return; }
+
+  // Count for banner
+  const buys = sigs.filter(s=>s.signal==='BUY').length;
+  const sells = sigs.filter(s=>s.signal==='SELL').length;
+  const watches = sigs.filter(s=>s.signal==='WATCH').length;
+  $('mbPerf').innerHTML = `
+    <div class="mb-p">BUY: <b style="color:var(--green-l)">${buys}</b></div>
+    <div class="mb-p">SELL: <b style="color:var(--red-l)">${sells}</b></div>
+    <div class="mb-p">WATCH: <b style="color:var(--amber-l)">${watches}</b></div>
+    <div class="mb-p">Daten: <b style="color:var(--text)">${new Date().toLocaleDateString('de-DE')}</b></div>
+  `;
+
+  $('SIG').innerHTML = sigs.map(s => {
+    const sc = s.signal==='BUY'?'buy':s.signal==='SELL'?'sell':'watch';
+    const bc = s.signal==='BUY'?'b-buy':s.signal==='SELL'?'b-sell':'b-watch';
+    const label = s.signal==='BUY'?'LONG':s.signal==='SELL'?'SHORT':'WATCH';
+    const dots = '●'.repeat(s.confidence)+'○'.repeat(5-s.confidence);
+    const cc = s.confidence>=4?'var(--green-l)':s.confidence>=3?'var(--amber-l)':'var(--text-dim)';
+    const chips = s.layers.map(l => {
+      const lBg = l.direction==='bullish'?'rgba(30,107,58,.15)':l.direction==='bearish'?'rgba(139,26,26,.15)':'rgba(184,150,62,.1)';
+      const lCol = l.direction==='bullish'?'var(--green-l)':l.direction==='bearish'?'var(--red-l)':'var(--amber-l)';
+      return `<span class="sig-chip" style="background:${lBg};color:${lCol}">${l.label}</span>`;
+    }).join('');
+    return `<div class="sig-row ${sc}">
+      <span class="sig-pair">${s.pair}</span>
+      <div class="sig-layers">${chips}</div>
+      <span class="sig-badge ${bc}">${label}</span>
+      <span class="sig-score">${sign(s.score)}${s.score}</span>
+      <span class="sig-conf" style="color:${cc}">${dots}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── MAIN LOAD ──
+async function loadAll() {
+  $('statusText').textContent = 'Lade FRED-Daten...';
+  $('statusDot').className = 'status-dot';
+  try {
+    const results = await fetchAllFred();
+    const loaded = Object.values(results).filter(r => r.length > 0).length;
+    if (loaded === 0) throw new Error('Keine FRED-Daten empfangen');
+
+    const data = computeModel(results);
+    renderSignals(data);
+    renderL1(data);
+    renderL2(data);
+    renderYC(data);
+    renderL3(data);
+    $('statusText').textContent = `Live · ${loaded}/${Object.keys(FRED_SERIES).length} Serien · ${new Date().toLocaleTimeString('de-DE')}`;
+    $('statusDot').className = 'status-dot';
+  } catch(e) {
+    $('statusText').textContent = `Fehler: ${e.message}`;
+    $('statusDot').className = 'status-dot err';
+    console.error(e);
+  }
+}
+
+loadAll();
+setInterval(loadAll, 600000);
+</script>
+</body>
+</html>

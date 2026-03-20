@@ -510,6 +510,7 @@ section { padding: 120px 48px; }
   transition: all .25s;
 }
 .tool-card:not(.coming):hover .tool-arrow { opacity: 1; transform: translateX(0); }
+.tool-card:last-child { grid-column: 1 / -1; }
 
 /* ── WHY ── */
 .why-section { background: var(--bg); }
@@ -936,12 +937,12 @@ body.lang-en li.en { display: list-item; }
 
       <div class="hero-stats reveal d4">
         <div>
-          <div class="stat-val">4</div>
+          <div class="stat-val">5</div>
           <div class="stat-label de">Tools geplant</div>
           <div class="stat-label en">Tools planned</div>
         </div>
         <div>
-          <div class="stat-val">3</div>
+          <div class="stat-val">4</div>
           <div class="stat-label de">Jetzt live</div>
           <div class="stat-label en">Live now</div>
         </div>
@@ -1101,6 +1102,24 @@ body.lang-en li.en { display: list-item; }
           <span class="tool-chip">Extrempunkte</span>
           <span class="tool-chip">Multi-Asset</span>
           <span class="tool-chip">Trendanalyse</span>
+        </div>
+        <div class="tool-arrow">→</div>
+      </a>
+
+      <a href="StratTrecs_ModellA_v2.html" class="tool-card reveal d4">
+        <div class="tool-tag live de">Jetzt verfügbar</div>
+        <div class="tool-tag live en">Available now</div>
+        <div class="tool-icon">🏦</div>
+        <div class="tool-name de">Zinsdifferenz-Engine</div>
+        <div class="tool-name en">Interest Rate Differential Engine</div>
+        <p class="tool-desc de">Makro-Signale für Forex auf Basis von Leitzinsen, Rendite-Spreads und Momentum. Drei Schichten, statistisch optimiert. Live FRED-Daten direkt im Browser.</p>
+        <p class="tool-desc en">Macro signals for forex based on policy rates, yield spreads and momentum. Three layers, statistically optimised. Live FRED data directly in browser.</p>
+        <div class="tool-chips">
+          <span class="tool-chip">FRED Live</span>
+          <span class="tool-chip">3-Schichten</span>
+          <span class="tool-chip">Forex-Signale</span>
+          <span class="tool-chip">Optimiert</span>
+          <span class="tool-chip">Zinskurve</span>
         </div>
         <div class="tool-arrow">→</div>
       </a>
@@ -1302,13 +1321,13 @@ body.lang-en li.en { display: list-item; }
     <ul class="footer-nav">
       <li><a href="#tools" class="de">Tools</a><a href="#tools" class="en">Tools</a></li>
       <li><a href="#pricing" class="de">Preise</a><a href="#pricing" class="en">Pricing</a></li>
-      <li><a href="mailto:kontakt@strattrecs.com">Kontakt</a></li>
+      <li><a href="/cdn-cgi/l/email-protection#b7dcd8d9c3d6dcc3f7c4c3c5d6c3c3c5d2d4c499d4d8da">Kontakt</a></li>
     </ul>
     <div class="footer-copy">© 2025 StratTrecs · All rights reserved</div>
   </div>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // LANGUAGE
 let lang = 'de';
 function setLang(l) {
@@ -1397,12 +1416,4 @@ function submitWL() {
   inp.style.borderColor = '';
   document.getElementById('wlForm').style.display = 'none';
   document.getElementById('wlSuccess').style.display = 'block';
-  console.log('Waitlist:', email);
-}
-document.getElementById('wlEmail').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitWL();
-});
-</script>
-
-</body>
-</html>
+  console.log('Waitlis
