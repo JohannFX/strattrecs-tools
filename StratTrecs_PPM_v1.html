@@ -43,7 +43,9 @@ body { padding:22px 24px 40px; }
 /* ══ TOPBAR ══ */
 .topbar {
   display:flex; align-items:flex-end; justify-content:space-between;
-  padding:4px 2px 10px; position:relative;
+  padding:12px 24px 12px; position:sticky; top:0; z-index:100;
+  background:rgba(10,10,10,.85); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--line); margin:-22px -24px 0; width:calc(100% + 48px);
 }
 h1 { font-size:28px; font-weight:800; letter-spacing:0.01em; line-height:1.1; }
 .sub { color:var(--muted); margin-top:5px; font-size:13px; }
@@ -137,6 +139,47 @@ h1 { font-size:28px; font-weight:800; letter-spacing:0.01em; line-height:1.1; }
 }
 .e-hint a { color:var(--muted); text-decoration:underline; }
 .e-hint a:hover { color:var(--text); }
+
+/* ══ MARKET SNAPSHOT ══ */
+.market-snapshot {
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;
+  margin-bottom:20px;
+}
+.snap-card {
+  background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px;text-align:center;
+}
+.snap-val {
+  font-family:ui-monospace,monospace;font-size:24px;font-weight:800;line-height:1;
+  margin-bottom:4px;
+}
+.snap-val.bull { color:var(--bull); }
+.snap-val.bear { color:var(--bear); }
+.snap-val.warn { color:var(--warn); }
+.snap-val.neut { color:var(--soft); }
+.snap-val.text { color:var(--text); }
+.snap-lbl {
+  font-family:ui-monospace,monospace;font-size:10px;color:var(--soft);
+  letter-spacing:.04em;
+}
+
+/* ══ EXPORT BUTTON ══ */
+.export-btn {
+  display:flex;align-items:center;gap:5px;
+  padding:7px 14px;border-radius:6px;border:1px solid var(--line2);
+  background:var(--panel);color:var(--muted);
+  font-family:ui-monospace,monospace;font-size:11px;font-weight:600;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.export-btn:hover { border-color:var(--bull);color:var(--bull);background:rgba(34,197,94,.06); }
+.export-icon { font-size:13px; }
+.export-toast {
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--panel2);border:1px solid var(--bull);border-radius:8px;
+  padding:10px 20px;color:var(--bull);font-family:ui-monospace,monospace;font-size:12px;
+  z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.export-toast.show { opacity:1; }
 
 /* ══ INTERPRETATION GUIDE ══ */
 .interp-guide {
@@ -265,6 +308,33 @@ h1 { font-size:28px; font-weight:800; letter-spacing:0.01em; line-height:1.1; }
 .r-badge.rev  { color:var(--warn); border:1px solid rgba(234,179,8,.35); }
 .r-badge.neut { color:var(--soft); border:1px solid var(--line2); }
 
+/* Ranking filters */
+.rank-filters {
+  display:flex;gap:6px;margin:12px 0 16px;flex-wrap:wrap;
+}
+.rank-filter {
+  padding:5px 14px;border-radius:20px;border:1px solid var(--line2);
+  background:transparent;color:var(--soft);font-family:ui-monospace,monospace;
+  font-size:11px;cursor:pointer;transition:all .15s;
+}
+.rank-filter:hover { border-color:var(--text);color:var(--text); }
+.rank-filter.active { border-color:var(--bull);color:var(--bull);background:rgba(34,197,94,.08); }
+.rank-filter.active[data-filter="bear"] { border-color:var(--bear);color:var(--bear);background:rgba(239,68,68,.06); }
+.rank-filter.active[data-filter="rev"] { border-color:var(--warn);color:var(--warn);background:rgba(234,179,8,.06); }
+.rank-filter.active[data-filter="neut"] { border-color:var(--soft);color:var(--soft);background:rgba(255,255,255,.04); }
+.rank-filter.active[data-filter="all"] { border-color:var(--text);color:var(--text);background:rgba(255,255,255,.05); }
+
+/* Sortable headers */
+.rank-table th.sortable { cursor:pointer;user-select:none;transition:color .15s; }
+.rank-table th.sortable:hover { color:var(--text); }
+.sort-icon { font-size:10px;opacity:.4;margin-left:2px; }
+.sort-icon.active { opacity:1;color:var(--bull); }
+
+/* Rank count */
+.rank-count {
+  padding:8px 24px 14px;font-family:ui-monospace,monospace;font-size:11px;color:var(--soft);
+}
+
 /* ══ HISTORY CHARTS ══ */
 .hist-ctrls { display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
 .ctrl-sel {
@@ -383,14 +453,128 @@ canvas.chart-c { width:100%; display:block; cursor:crosshair; }
 .panel-body { padding:20px 24px; }
 
 /* ══ RESPONSIVE ══ */
+@media(max-width:1200px) {
+  .pairs-grid { grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
+  .ccy-grid-dash { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); }
+}
 @media(max-width:880px) {
   .ig-steps { grid-template-columns:1fr; }
   body { padding:14px 14px 32px; }
-  .topbar { flex-wrap:wrap; gap:12px; }
+  .topbar { flex-wrap:wrap; gap:12px; margin:-14px -14px 0; width:calc(100% + 28px); padding:12px 14px; }
   .topbar > div:nth-child(2) { position:static!important; transform:none!important; order:3; width:100%; }
   .mode-switcher { width:100%; justify-content:center; }
   h1 { font-size:22px; }
+  .market-snapshot { grid-template-columns:repeat(3,1fr); }
+  .pairs-grid { grid-template-columns:1fr; }
+  .rank-table th, .rank-table td { padding:8px 10px; font-size:12px; }
+  .detail-modal-inner { width:95%; max-height:90vh; }
 }
+@media(max-width:560px) {
+  .market-snapshot { grid-template-columns:repeat(2,1fr); }
+  .ccy-grid-dash { grid-template-columns:repeat(2,1fr); }
+  .interp-guide { grid-template-columns:1fr; }
+  .mode-switcher { gap:16px; }
+  .h-tab { font-size:12px; }
+  .hist-ctrls { flex-direction:column; align-items:stretch; }
+  .ctrl-sel { width:100%; }
+}
+
+/* ══ MICRO-INTERACTIONS ══ */
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(12px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+@keyframes countUp {
+  from { opacity:0; transform:scale(0.8); }
+  to   { opacity:1; transform:scale(1); }
+}
+.tab-panel.active { animation:fadeIn .3s ease; }
+.ccy-card { animation:fadeInUp .35s ease both; }
+.pair-card { animation:fadeInUp .35s ease both; cursor:pointer; }
+.pair-card:active { transform:scale(0.985); }
+.snap-card { animation:countUp .4s ease both; }
+.ccy-card:nth-child(1) { animation-delay:.02s; }
+.ccy-card:nth-child(2) { animation-delay:.05s; }
+.ccy-card:nth-child(3) { animation-delay:.08s; }
+.ccy-card:nth-child(4) { animation-delay:.11s; }
+.ccy-card:nth-child(5) { animation-delay:.14s; }
+.ccy-card:nth-child(6) { animation-delay:.17s; }
+.ccy-card:nth-child(7) { animation-delay:.20s; }
+.ccy-card:nth-child(8) { animation-delay:.23s; }
+.snap-card:nth-child(1) { animation-delay:.02s; }
+.snap-card:nth-child(2) { animation-delay:.06s; }
+.snap-card:nth-child(3) { animation-delay:.10s; }
+.snap-card:nth-child(4) { animation-delay:.14s; }
+.snap-card:nth-child(5) { animation-delay:.18s; }
+.snap-card:nth-child(6) { animation-delay:.22s; }
+.rank-table tbody tr { animation:fadeIn .25s ease both; }
+.rank-table tbody tr:nth-child(1)  { animation-delay:.02s; }
+.rank-table tbody tr:nth-child(2)  { animation-delay:.04s; }
+.rank-table tbody tr:nth-child(3)  { animation-delay:.06s; }
+.rank-table tbody tr:nth-child(4)  { animation-delay:.08s; }
+.rank-table tbody tr:nth-child(5)  { animation-delay:.10s; }
+
+/* Skeleton loading */
+.skeleton {
+  background:linear-gradient(90deg,var(--panel2) 25%,var(--line) 50%,var(--panel2) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+  border-radius:6px;
+}
+@keyframes shimmer {
+  0% { background-position:200% 0; }
+  100% { background-position:-200% 0; }
+}
+
+/* ══ PAIR DETAIL MODAL ══ */
+.detail-overlay {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .25s ease;
+  pointer-events:none;
+}
+.detail-overlay.open { opacity:1; pointer-events:auto; }
+.detail-modal-inner {
+  background:var(--panel); border:1px solid var(--line2); border-radius:12px;
+  width:680px; max-width:95vw; max-height:85vh; overflow-y:auto;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+  transform:translateY(20px) scale(0.97); transition:transform .25s ease;
+  padding:24px;
+}
+.detail-overlay.open .detail-modal-inner { transform:translateY(0) scale(1); }
+.detail-close {
+  float:right; background:none; border:1px solid var(--line2); border-radius:6px;
+  color:var(--soft); font-size:18px; width:32px; height:32px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .15s;
+}
+.detail-close:hover { color:var(--text); border-color:var(--text); }
+.detail-pair-name {
+  font-family:ui-monospace,monospace; font-size:22px; font-weight:800;
+  color:var(--text); margin-bottom:4px;
+}
+.detail-signal { margin-bottom:16px; }
+.detail-chart-wrap {
+  width:100%; height:300px; border-radius:8px; overflow:hidden;
+  border:1px solid var(--line); margin-bottom:16px;
+}
+.detail-stats {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+}
+.detail-stat {
+  background:var(--panel2); border:1px solid var(--line); border-radius:6px;
+  padding:10px 12px; text-align:center;
+}
+.detail-stat-val {
+  font-family:ui-monospace,monospace; font-size:18px; font-weight:800; line-height:1;
+  margin-bottom:3px;
+}
+.detail-stat-lbl { font-size:10px; color:var(--soft); letter-spacing:.04em; }
 </style>
 </head>
 <body>
@@ -410,6 +594,9 @@ canvas.chart-c { width:100%; display:block; cursor:crosshair; }
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <button class="export-btn" id="exportBtn" onclick="exportSnapshot()" title="Als Bild exportieren">
+        <span class="export-icon">↓</span> Export
+      </button>
       <div class="upload-zone" id="uploadZone">
         <div class="upload-icon" id="uploadIcon">⏳</div>
         <div class="upload-text">
@@ -461,6 +648,10 @@ canvas.chart-c { width:100%; display:block; cursor:crosshair; }
           <span id="mbGrp"></span><span id="mbLB"></span>
           <span id="mbAlpha"></span><span id="mbBeta"></span>
         </div>
+
+        <!-- Market Snapshot -->
+        <div class="market-snapshot" id="marketSnapshot"></div>
+
         <div class="interp-guide">
           <div class="ig-row"><span class="ig-badge bull">BULLISH</span><span class="ig-desc">Klarer Long-Druck erkannt</span></div>
           <div class="ig-row"><span class="ig-badge bear">BEARISH</span><span class="ig-desc">Klarer Short-Druck erkannt</span></div>
@@ -488,13 +679,20 @@ canvas.chart-c { width:100%; display:block; cursor:crosshair; }
       <div class="panel">
         <div style="padding:20px 24px 0;">
           <div class="sec-ttl">Alle Paare — Ranking (aktuellste Woche)</div>
+          <div class="rank-filters" id="rankFilters">
+            <button class="rank-filter active" data-filter="all" onclick="setRankFilter('all')">Alle</button>
+            <button class="rank-filter" data-filter="bull" onclick="setRankFilter('bull')">Bullish</button>
+            <button class="rank-filter" data-filter="bear" onclick="setRankFilter('bear')">Bearish</button>
+            <button class="rank-filter" data-filter="rev" onclick="setRankFilter('rev')">Reversal</button>
+            <button class="rank-filter" data-filter="neut" onclick="setRankFilter('neut')">Neutral</button>
+          </div>
         </div>
         <div class="rank-scroll">
           <table class="rank-table">
             <thead><tr>
-              <th>#</th>
-              <th>Paar</th>
-              <th class="r">Stärke</th>
+              <th class="sortable" onclick="setRankSort('rank')"># <span class="sort-icon" id="sort-rank">↓</span></th>
+              <th class="sortable" onclick="setRankSort('name')">Paar <span class="sort-icon" id="sort-name"></span></th>
+              <th class="r sortable" onclick="setRankSort('strength')">Stärke <span class="sort-icon" id="sort-strength"></span></th>
               <th>Signal</th>
               <th>Richtung</th>
               <th>Status</th>
@@ -502,6 +700,7 @@ canvas.chart-c { width:100%; display:block; cursor:crosshair; }
             <tbody id="rankBody"></tbody>
           </table>
         </div>
+        <div class="rank-count" id="rankCount"></div>
       </div>
     </div>
   </div>
@@ -526,15 +725,15 @@ canvas.chart-c { width:100%; display:block; cursor:crosshair; }
             <option value="200">200 Wochen</option>
           </select>
         </div>
-        <div class="chart-wrap">
-          <canvas class="chart-c" id="pairCanvas" height="260"></canvas>
-          <div class="chart-leg" id="pairLeg"></div>
+        <div class="chart-wrap" style="padding:0;overflow:hidden;">
+          <div id="lwPairChart" style="width:100%;height:300px;"></div>
         </div>
-        <div class="sec-ttl">Währungs Vergleich</div>
-        <div class="chart-wrap">
-          <canvas class="chart-c" id="ccyCanvas" height="200"></canvas>
-          <div class="chart-leg" id="ccyLeg"></div>
+        <div class="chart-leg" id="pairLeg"></div>
+        <div class="sec-ttl" style="margin-top:20px;">Währungs Vergleich</div>
+        <div class="chart-wrap" style="padding:0;overflow:hidden;">
+          <div id="lwCcyChart" style="width:100%;height:240px;"></div>
         </div>
+        <div class="chart-leg" id="ccyLeg"></div>
       </div>
     </div>
   </div>
@@ -642,6 +841,38 @@ canvas.chart-c { width:100%; display:block; cursor:crosshair; }
 
 <div class="tooltip" id="tip"></div>
 <div class="toast"   id="toast"></div>
+
+<!-- Pair Detail Modal -->
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-modal-inner">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div class="detail-pair-name" id="detailPairName"></div>
+    <div class="detail-signal" id="detailSignal"></div>
+    <div class="detail-chart-wrap" id="detailChartWrap"></div>
+    <div class="detail-stats" id="detailStats"></div>
+  </div>
+</div>
+
+<!-- Lightweight Charts from TradingView — with fallbacks -->
+<script>
+(function loadLWC(){
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js',
+    'https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.1/lightweight-charts.standalone.production.js'
+  ];
+  let idx = 0;
+  function tryNext() {
+    if(idx >= urls.length) { console.warn('LightweightCharts: all CDNs failed'); return; }
+    const s = document.createElement('script');
+    s.src = urls[idx++];
+    s.onload = () => { console.log('LightweightCharts loaded from', s.src); };
+    s.onerror = () => { console.warn('LWC CDN failed:', s.src); tryNext(); };
+    document.head.appendChild(s);
+  }
+  tryNext();
+})();
+</script>
 
 <!-- ══════════════════════════════════════════════════════════════════════
      JAVASCRIPT — PPM ENGINE (unverändert)
@@ -1162,6 +1393,33 @@ function renderDashboard() {
   if(!Object.keys(ppmCcy).length){dc.style.display='none';de.style.display='flex';return;}
   dc.style.display='block';de.style.display='none';
 
+  // ── Market Snapshot
+  const snap = document.getElementById('marketSnapshot');
+  if (snap) {
+    let nBull=0, nBear=0, nRev=0, nNeut=0, strongest=null, strongestVal=0;
+    for (const pair of PAIRS) {
+      if(!visibleCcy.has(pair.b)||!visibleCcy.has(pair.q)) continue;
+      const data = ppmPairs[pair.p];
+      if(!data?.length) continue;
+      const r = data[0];
+      const s = sig(r.pp,r.zcrowd,r.rev,par);
+      if(s==='bull') nBull++;
+      else if(s==='bear') nBear++;
+      else if(s==='rev') nRev++;
+      else nNeut++;
+      if(Math.abs(r.pp)>strongestVal){ strongestVal=Math.abs(r.pp); strongest={name:pair.p,pp:r.pp,s}; }
+    }
+    const total = nBull+nBear+nRev+nNeut;
+    snap.innerHTML = `
+      <div class="snap-card"><div class="snap-val text">${total}</div><div class="snap-lbl">Paare gesamt</div></div>
+      <div class="snap-card"><div class="snap-val bull">${nBull}</div><div class="snap-lbl">Bullish</div></div>
+      <div class="snap-card"><div class="snap-val bear">${nBear}</div><div class="snap-lbl">Bearish</div></div>
+      <div class="snap-card"><div class="snap-val warn">${nRev}</div><div class="snap-lbl">Reversal</div></div>
+      <div class="snap-card"><div class="snap-val neut">${nNeut}</div><div class="snap-lbl">Neutral</div></div>
+      <div class="snap-card"><div class="snap-val ${strongest?strongest.s:'neut'}">${strongest?strongest.name:'—'}</div><div class="snap-lbl">Stärkstes Signal</div></div>
+    `;
+  }
+
   // ── Currency cards
   const grid=document.getElementById('ccyPGrid');
   grid.innerHTML='';
@@ -1214,6 +1472,8 @@ function renderDashboard() {
 
     const card=document.createElement('div');
     card.className=`pair-card ${s}`;
+    card.onclick = () => openDetail(pair.p);
+    card.title = `${pair.p} — Klicken für Details`;
     card.innerHTML=`
       <div class="pc-hdr">
         <div class="pc-pair">${pair.p}</div>
@@ -1240,6 +1500,36 @@ function renderDashboard() {
 // ─────────────────────────────────────────────
 // RANKING
 // ─────────────────────────────────────────────
+let rankFilter = 'all';
+let rankSortKey = 'rank';
+let rankSortAsc = false;
+
+function setRankFilter(f) {
+  rankFilter = f;
+  document.querySelectorAll('.rank-filter').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  renderRanking();
+}
+
+function setRankSort(key) {
+  if (rankSortKey === key) { rankSortAsc = !rankSortAsc; }
+  else { rankSortKey = key; rankSortAsc = key === 'name'; }
+  renderRanking();
+}
+
+function updateSortIcons() {
+  ['rank','name','strength'].forEach(k => {
+    const el = document.getElementById('sort-' + k);
+    if (!el) return;
+    if (k === rankSortKey) {
+      el.textContent = rankSortAsc ? '↑' : '↓';
+      el.className = 'sort-icon active';
+    } else {
+      el.textContent = '';
+      el.className = 'sort-icon';
+    }
+  });
+}
+
 function renderRanking() {
   const par=P();
   const re=document.getElementById('rankEmpty');
@@ -1247,19 +1537,34 @@ function renderRanking() {
   if(!Object.keys(ppmPairs).length){rc.style.display='none';re.style.display='flex';return;}
   rc.style.display='block';re.style.display='none';
 
-  const rows=[];
+  let rows=[];
   for(const pair of PAIRS){
     if(!visibleCcy.has(pair.b)||!visibleCcy.has(pair.q))continue;
     const data=ppmPairs[pair.p];
     if(!data?.length)continue;
-    rows.push({name:pair.p,...data[0]});
+    const r = data[0];
+    const s = sig(r.pp,r.zcrowd,r.rev,par);
+    rows.push({name:pair.p, s, ...r});
   }
-  rows.sort((a,b)=>Math.abs(b.pp)-Math.abs(a.pp));
+
+  // Filter
+  if (rankFilter !== 'all') {
+    rows = rows.filter(r => r.s === rankFilter);
+  }
+
+  // Sort
+  if (rankSortKey === 'rank' || rankSortKey === 'strength') {
+    rows.sort((a,b) => rankSortAsc ? Math.abs(a.pp) - Math.abs(b.pp) : Math.abs(b.pp) - Math.abs(a.pp));
+  } else if (rankSortKey === 'name') {
+    rows.sort((a,b) => rankSortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+  }
+
+  updateSortIcons();
 
   const tbody=document.getElementById('rankBody');
   tbody.innerHTML='';
   rows.forEach((r,i)=>{
-    const s=sig(r.pp,r.zcrowd,r.rev,par);
+    const s=r.s;
     const label=sigLabel(r.pp,r.zcrowd,r.rev,par);
     const crowdFlag=Math.abs(r.zcrowd)>=par.cwTh;
     const crowdExt =Math.abs(r.zcrowd)>=par.ceTh;
@@ -1275,6 +1580,14 @@ function renderRanking() {
       </td>`;
     tbody.appendChild(tr);
   });
+
+  const countEl = document.getElementById('rankCount');
+  if (countEl) {
+    const total = PAIRS.filter(p=>visibleCcy.has(p.b)&&visibleCcy.has(p.q)&&ppmPairs[p.p]?.length).length;
+    countEl.textContent = rankFilter === 'all'
+      ? `${rows.length} Paare`
+      : `${rows.length} von ${total} Paaren`;
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1293,6 +1606,12 @@ function renderHistory() {
   sel.innerHTML=validPairs.map(p=>`<option value="${p.p}">${p.p}</option>`).join('');
   if(cur&&validPairs.find(p=>p.p===cur))sel.value=cur;
 
+  // Retry if LWC not loaded yet
+  if(typeof LightweightCharts === 'undefined') {
+    setTimeout(renderHistory, 500);
+    return;
+  }
+
   drawPairChart();
   drawCcyChart();
 }
@@ -1304,46 +1623,180 @@ function drawPairChart() {
   const data   = ppmPairs[pair];
   if(!data?.length)return;
   const par=P();
-  const canvas=document.getElementById('pairCanvas');
 
-  // data is newest-first ISO strings — sort ascending, take last wks entries
   const sorted = [...data].sort((a,b)=>a.date.localeCompare(b.date));
   const pts    = sorted.slice(Math.max(0, sorted.length - wks));
 
-  drawLineChart(canvas, pts, metric,
-    [{key:metric,label:`${pair}`,color:'#22c55e'}],
-    document.getElementById('pairLeg'),
-    {showThresholds: metric==='pp', par,
-     threshPos: metric==='pp'?par.ppTh:metric==='zcrowd'?par.cwTh:null,
-     threshNeg: metric==='pp'?-par.ppTh:metric==='zcrowd'?-par.cwTh:null});
+  const container = document.getElementById('lwPairChart');
+  container.innerHTML = '';
+
+  if(typeof LightweightCharts === 'undefined') {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--soft);font-size:13px;">Chart-Library wird geladen…</div>';
+    return;
+  }
+
+  const chart = LightweightCharts.createChart(container, {
+    width: container.offsetWidth, height: 300,
+    layout:{ background:{type:'solid',color:'#0f0f0f'}, textColor:'#8e8e8e', fontSize:11 },
+    grid:{ vertLines:{color:'#1a1a1a'}, horzLines:{color:'#1a1a1a'} },
+    crosshair:{ mode:0, vertLine:{color:'rgba(34,197,94,.3)',width:1,style:3}, horzLine:{color:'rgba(34,197,94,.3)',width:1,style:3} },
+    timeScale:{ borderColor:'#2d2d2d', timeVisible:false, rightOffset:2, lockVisibleTimeRangeOnResize:true, shiftVisibleRangeOnNewBar:true },
+    rightPriceScale:{ borderColor:'#2d2d2d' },
+    handleScale:{ axisPressedMouseMove:false }, handleScroll:{ pressedMouseMove:true, horzTouchDrag:true },
+  });
+
+  const areaSeries = chart.addAreaSeries({
+    lineColor:'#22c55e', lineWidth:2,
+    topColor:'rgba(34,197,94,.18)', bottomColor:'rgba(34,197,94,.02)',
+    crosshairMarkerRadius:4, crosshairMarkerBorderColor:'#22c55e',
+    priceFormat:{type:'price',precision:2,minMove:0.01},
+  });
+
+  const lineData = pts.map(pt => ({ time: pt.date, value: pt[metric] || 0 }));
+  areaSeries.setData(lineData);
+
+  // Threshold lines
+  if(metric==='pp' && par.ppTh) {
+    areaSeries.createPriceLine({ price:par.ppTh, color:'rgba(34,197,94,.4)', lineWidth:1, lineStyle:2, axisLabelVisible:false });
+    areaSeries.createPriceLine({ price:-par.ppTh, color:'rgba(239,68,68,.4)', lineWidth:1, lineStyle:2, axisLabelVisible:false });
+  }
+
+  // Zero line
+  areaSeries.createPriceLine({ price:0, color:'rgba(255,255,255,.12)', lineWidth:1, lineStyle:1, axisLabelVisible:false });
+
+  chart.timeScale().fitContent();
+  container.addEventListener('dblclick', () => chart.timeScale().fitContent());
+  new ResizeObserver(() => { chart.applyOptions({width:container.offsetWidth}); }).observe(container);
+
+  // Legend
+  const legEl = document.getElementById('pairLeg');
+  if(legEl) {
+    const metricLabels={pp:'Conviction',zflow:'Flow',zcrowd:'Crowding',rev:'Reversal',netrel:'Netto'};
+    legEl.innerHTML=`<div class="leg-it"><div class="leg-dot" style="background:#22c55e;"></div>${pair} — ${metricLabels[metric]||metric}</div>`;
+  }
 }
 
 function drawCcyChart() {
-  const canvas = document.getElementById('ccyCanvas');
   const wks    = parseInt(document.getElementById('histWeeks').value);
   const ccys   = Object.keys(ppmCcy).filter(c=>visibleCcy.has(c)&&ppmCcy[c].length>=4);
   if(!ccys.length)return;
 
-  // Build per-ccy map of last wks dates
   const ccyMaps = {};
   for(const c of ccys){
     const sorted = [...ppmCcy[c]].sort((a,b)=>a.date.localeCompare(b.date));
     const sliced = sorted.slice(Math.max(0, sorted.length - wks));
     ccyMaps[c] = Object.fromEntries(sliced.map(r=>[r.date, r]));
   }
-
-  // Intersection: only dates present in ALL currencies
   const allDateSets = ccys.map(c => new Set(Object.keys(ccyMaps[c])));
   const commonDates = [...allDateSets[0]].filter(d => allDateSets.every(s => s.has(d))).sort();
-
   if(!commonDates.length) return;
 
-  const series = ccys.map(c => ({
-    key:c, label:c, color:CCY_COLORS[c]||'#888',
-    vals: commonDates.map(d => ccyMaps[c][d]?.pp ?? null)
-  }));
-  drawMultiLine(canvas, commonDates, series, document.getElementById('ccyLeg'));
+  const container = document.getElementById('lwCcyChart');
+  container.innerHTML = '';
+
+  if(typeof LightweightCharts === 'undefined') {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--soft);font-size:13px;">Chart-Library wird geladen…</div>';
+    return;
+  }
+
+  const chart = LightweightCharts.createChart(container, {
+    width: container.offsetWidth, height: 240,
+    layout:{ background:{type:'solid',color:'#0f0f0f'}, textColor:'#8e8e8e', fontSize:11 },
+    grid:{ vertLines:{color:'#1a1a1a'}, horzLines:{color:'#1a1a1a'} },
+    crosshair:{ mode:0 },
+    timeScale:{ borderColor:'#2d2d2d', timeVisible:false, rightOffset:2, lockVisibleTimeRangeOnResize:true, shiftVisibleRangeOnNewBar:true },
+    rightPriceScale:{ borderColor:'#2d2d2d' },
+    handleScale:{ axisPressedMouseMove:false }, handleScroll:{ pressedMouseMove:true, horzTouchDrag:true },
+  });
+
+  const legEl = document.getElementById('ccyLeg');
+  let legHTML = '';
+
+  ccys.forEach(c => {
+    const color = CCY_COLORS[c] || '#888';
+    const series = chart.addLineSeries({ color, lineWidth:1.5, priceFormat:{type:'price',precision:2,minMove:0.01} });
+    series.setData(commonDates.map(d => ({ time:d, value:ccyMaps[c][d]?.pp ?? 0 })));
+    legHTML += `<div class="leg-it"><div class="leg-dot" style="background:${color};"></div>${c}</div>`;
+  });
+
+  // Zero line
+  const zeroSeries = chart.addLineSeries({ color:'rgba(255,255,255,.1)', lineWidth:1, lineStyle:1, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+  zeroSeries.setData(commonDates.map(d => ({ time:d, value:0 })));
+
+  chart.timeScale().fitContent();
+  container.addEventListener('dblclick', () => chart.timeScale().fitContent());
+  new ResizeObserver(() => { chart.applyOptions({width:container.offsetWidth}); }).observe(container);
+  if(legEl) legEl.innerHTML = legHTML;
 }
+
+// ─────────────────────────────────────────────
+// PAIR DETAIL MODAL
+// ─────────────────────────────────────────────
+let detailChart = null;
+
+function openDetail(pairName) {
+  const data = ppmPairs[pairName];
+  if(!data?.length) return;
+  const par = P();
+  const r = data[0];
+  const s = sig(r.pp,r.zcrowd,r.rev,par);
+  const label = sigLabel(r.pp,r.zcrowd,r.rev,par);
+  const r1 = data[1] || r;
+  const chg = r.pp - r1.pp;
+
+  document.getElementById('detailPairName').textContent = pairName;
+  document.getElementById('detailSignal').innerHTML = `<span class="pc-badge ${s}" style="font-size:12px;padding:4px 12px;">${label}</span>`;
+
+  const statsEl = document.getElementById('detailStats');
+  statsEl.innerHTML = `
+    <div class="detail-stat"><div class="detail-stat-val" style="color:${s==='bull'?'var(--bull)':s==='bear'?'var(--bear)':'var(--warn)'};">${r.pp>=0?'+':''}${r.pp.toFixed(2)}</div><div class="detail-stat-lbl">Conviction</div></div>
+    <div class="detail-stat"><div class="detail-stat-val" style="color:${chg>0?'var(--bull)':chg<0?'var(--bear)':'var(--soft)'};">${chg>=0?'+':''}${chg.toFixed(2)}</div><div class="detail-stat-lbl">vs Vorwoche</div></div>
+    <div class="detail-stat"><div class="detail-stat-val" style="color:var(--text);">${r.date.slice(8,10)}.${r.date.slice(5,7)}.${r.date.slice(0,4)}</div><div class="detail-stat-lbl">Letzter Report</div></div>
+  `;
+
+  // Build chart
+  const container = document.getElementById('detailChartWrap');
+  container.innerHTML = '';
+
+  if(typeof LightweightCharts !== 'undefined') {
+    const sorted = [...data].sort((a,b)=>a.date.localeCompare(b.date));
+    const pts = sorted.slice(Math.max(0, sorted.length - 104));
+
+    detailChart = LightweightCharts.createChart(container, {
+      width: container.offsetWidth, height: 300,
+      layout:{ background:{type:'solid',color:'#111'}, textColor:'#8e8e8e', fontSize:11 },
+      grid:{ vertLines:{color:'#1a1a1a'}, horzLines:{color:'#1a1a1a'} },
+      crosshair:{ mode:0 },
+      timeScale:{ borderColor:'#2d2d2d', timeVisible:false, rightOffset:2, lockVisibleTimeRangeOnResize:true, shiftVisibleRangeOnNewBar:true },
+      rightPriceScale:{ borderColor:'#2d2d2d' },
+      handleScale:{ axisPressedMouseMove:false }, handleScroll:{ pressedMouseMove:true, horzTouchDrag:true },
+    });
+
+    const area = detailChart.addAreaSeries({
+      lineColor: s==='bull'?'#22c55e':s==='bear'?'#ef4444':'#eab308',
+      lineWidth:2,
+      topColor: s==='bull'?'rgba(34,197,94,.15)':s==='bear'?'rgba(239,68,68,.12)':'rgba(234,179,8,.12)',
+      bottomColor:'rgba(0,0,0,0)',
+      priceFormat:{type:'price',precision:2,minMove:0.01},
+    });
+    area.setData(pts.map(pt => ({ time:pt.date, value:pt.pp||0 })));
+    area.createPriceLine({ price:0, color:'rgba(255,255,255,.12)', lineWidth:1, lineStyle:1, axisLabelVisible:false });
+
+    detailChart.timeScale().fitContent();
+    new ResizeObserver(() => { if(detailChart) detailChart.applyOptions({width:container.offsetWidth}); }).observe(container);
+  }
+
+  document.getElementById('detailOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  if(detailChart) { detailChart.remove(); detailChart = null; }
+}
+
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeDetail(); });
 
 // ─────────────────────────────────────────────
 // CANVAS UTILITIES
@@ -1703,9 +2156,12 @@ function buildCcyFilter() {
 // ─────────────────────────────────────────────
 function switchTab(tab) {
   activeTab=tab;
-  const tabs=['dashboard','ranking','history','backtest','data'];
+  const tabs=['dashboard','ranking','history'];
   document.querySelectorAll('.h-tab').forEach((el,i)=>el.classList.toggle('active',tabs[i]===tab));
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    if(p.style.display==='none!important' || p.style.cssText.includes('none!important')) return;
+    p.classList.remove('active');
+  });
   const panel=document.getElementById('tab-'+tab);
   if(panel)panel.classList.add('active');
   if(tab==='history'){renderHistory();}
@@ -1759,6 +2215,64 @@ function loadDemo() {
 // INIT
 // ─────────────────────────────────────────────
 buildCcyFilter();
+
+// ─────────────────────────────────────────────
+// EXPORT AS PNG
+// ─────────────────────────────────────────────
+function exportSnapshot() {
+  const activePanel = document.querySelector('.tab-panel.active');
+  if (!activePanel) return;
+
+  const content = activePanel.querySelector('.panel-body') || activePanel.querySelector('.panel') || activePanel;
+  if (!content) return;
+
+  // Show toast
+  let toast = document.getElementById('exportToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'exportToast';
+    toast.className = 'export-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = 'Export wird erstellt…';
+  toast.classList.add('show');
+
+  // Use html2canvas
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  script.onload = () => {
+    html2canvas(content, {
+      backgroundColor: '#0a0a0a',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    }).then(canvas => {
+      const link = document.createElement('a');
+      const tabs = ['dashboard','ranking','history'];
+      const activeTab = tabs.find(t => document.getElementById('tab-'+t)?.classList.contains('active')) || 'export';
+      const date = new Date().toISOString().slice(0,10);
+      link.download = `StratTrecs_CI_${activeTab}_${date}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.textContent = '✓ Export gespeichert';
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }).catch(err => {
+      console.error('Export failed:', err);
+      toast.textContent = '✗ Export fehlgeschlagen';
+      toast.style.borderColor = 'var(--bear)';
+      toast.style.color = 'var(--bear)';
+      setTimeout(() => { toast.classList.remove('show'); toast.style.borderColor=''; toast.style.color=''; }, 2500);
+    });
+  };
+  script.onerror = () => {
+    toast.textContent = '✗ html2canvas konnte nicht geladen werden';
+    toast.style.borderColor = 'var(--bear)';
+    toast.style.color = 'var(--bear)';
+    setTimeout(() => { toast.classList.remove('show'); toast.style.borderColor=''; toast.style.color=''; }, 2500);
+  };
+  if (!window.html2canvas) document.head.appendChild(script);
+  else script.onload();
+}
 </script>
 </body>
 </html>
