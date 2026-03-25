@@ -127,6 +127,7 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.08); border-color: #aaa; 
   padding-top: 60px;
   display: flex;
   align-items: center;
+  justify-content: center;
   position: relative;
   overflow: hidden;
 }
@@ -137,7 +138,7 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.08); border-color: #aaa; 
     linear-gradient(var(--line) 1px, transparent 1px),
     linear-gradient(90deg, var(--line) 1px, transparent 1px);
   background-size: 64px 64px;
-  opacity: .12;
+  opacity: .08;
   pointer-events: none;
 }
 .hero-glow {
@@ -148,18 +149,136 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.08); border-color: #aaa; 
     radial-gradient(ellipse 45% 40% at 5% 90%, rgba(255,255,255,.03) 0%, transparent 55%);
   pointer-events: none;
 }
+
+/* PPM Tile Background */
+.hero-ppm-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.hero-ppm-inner {
+  width: 115%;
+  max-width: 1700px;
+  transform: perspective(1200px) rotateX(8deg) rotateY(-4deg) rotateZ(1.5deg) scale(1.05);
+  transform-origin: center center;
+  opacity: .30;
+  filter: blur(0.5px);
+  transition: opacity .5s;
+}
+body.light .hero-ppm-inner { opacity: .22; }
+.hero-ppm-inner .ppm-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.hero-ppm-inner .ppm-tile {
+  border-radius: 10px;
+  padding: 14px 12px;
+  position: relative;
+  overflow: hidden;
+  min-height: 94px;
+}
+.hero-ppm-inner .ppm-tile .t-pair {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 5px;
+  opacity: .9;
+}
+.hero-ppm-inner .ppm-tile .t-direction {
+  font-family: 'Inter', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  padding: 2px 9px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 5px;
+}
+.hero-ppm-inner .ppm-tile .t-score {
+  font-family: ui-monospace, monospace;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+/* Bull (LONG) tiles */
+.hero-ppm-inner .ppm-tile.bull {
+  background: #0b150f;
+  border: 1px solid rgba(34,197,94,.35);
+  box-shadow: 0 0 18px rgba(34,197,94,.15), inset 0 0 20px rgba(34,197,94,.06);
+}
+.hero-ppm-inner .ppm-tile.bull .t-direction { color: #22c55e; background: rgba(34,197,94,.15); }
+.hero-ppm-inner .ppm-tile.bull .t-score { color: #22c55e; }
+/* Bear (SHORT) tiles */
+.hero-ppm-inner .ppm-tile.bear {
+  background: #150d0d;
+  border: 1px solid rgba(239,68,68,.3);
+  box-shadow: 0 0 18px rgba(239,68,68,.12), inset 0 0 20px rgba(239,68,68,.05);
+}
+.hero-ppm-inner .ppm-tile.bear .t-direction { color: #ef4444; background: rgba(239,68,68,.15); }
+.hero-ppm-inner .ppm-tile.bear .t-score { color: #ef4444; }
+/* Reversal tiles */
+.hero-ppm-inner .ppm-tile.rev {
+  background: #15120a;
+  border: 1px solid rgba(234,179,8,.3);
+  box-shadow: 0 0 14px rgba(234,179,8,.1), inset 0 0 16px rgba(234,179,8,.04);
+}
+.hero-ppm-inner .ppm-tile.rev .t-direction { color: #eab308; background: rgba(234,179,8,.12); }
+.hero-ppm-inner .ppm-tile.rev .t-score { color: #eab308; }
+/* Neutral tiles */
+.hero-ppm-inner .ppm-tile.neut {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+}
+.hero-ppm-inner .ppm-tile.neut .t-direction { color: var(--soft); background: rgba(255,255,255,.05); }
+.hero-ppm-inner .ppm-tile.neut .t-score { color: var(--soft); }
+
+/* Fade-out mask on all edges */
+.hero-ppm-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 50%, transparent 25%, var(--bg) 72%);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .hero-inner {
   position: relative;
-  z-index: 1;
-  max-width: 1400px;
+  z-index: 2;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 80px 48px;
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  text-align: center;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 0;
 }
+.hero-content { flex: 1; max-width: 680px; }
+
+/* Silhouette placeholders */
+.hero-silhouette {
+  flex-shrink: 0;
+  width: 160px;
+  height: 320px;
+  position: relative;
+  opacity: .18;
+  pointer-events: none;
+}
+.hero-silhouette svg { width: 100%; height: 100%; }
+.hero-silhouette.left { margin-right: -10px; }
+.hero-silhouette.right { margin-left: -10px; }
+body.light .hero-silhouette { opacity: .14; }
 .hero-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -170,6 +289,7 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.08); border-color: #aaa; 
   color: var(--gold);
   text-transform: uppercase;
   margin-bottom: 22px;
+  justify-content: center;
 }
 .hero-eyebrow::before {
   content: '';
@@ -196,10 +316,10 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.08); border-color: #aaa; 
   font-size: 17px;
   color: var(--muted);
   line-height: 1.7;
-  max-width: 520px;
-  margin-bottom: 38px;
+  max-width: 580px;
+  margin: 0 auto 38px;
 }
-.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .btn-primary {
   display: inline-block;
   padding: 14px 28px;
@@ -237,6 +357,7 @@ body.light .theme-btn:hover { background: rgba(0,0,0,0.08); border-color: #aaa; 
   margin-top: 56px;
   padding-top: 32px;
   border-top: 1px solid var(--line);
+  justify-content: center;
 }
 .stat-val {
   font-size: 32px;
@@ -511,6 +632,208 @@ section { padding: 120px 48px; }
 }
 .tool-card:not(.coming):hover .tool-arrow { opacity: 1; transform: translateX(0); }
 .tool-card:last-child { grid-column: 1 / -1; }
+
+/* ── SEASONALITY SHOWCASE (Fullscreen Cinema) ── */
+.season-showcase {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--line);
+}
+.season-bg {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.season-bg-inner {
+  width: 94%; max-width: 1400px;
+  opacity: .55;
+  transform: perspective(1400px) rotateX(3deg) rotateY(-1.5deg);
+}
+body.light .season-bg-inner { opacity: .38; }
+
+/* Video mockup */
+.season-video-wrap {
+  width: 94%; max-width: 1400px;
+  opacity: .55;
+  transform: perspective(1400px) rotateX(3deg) rotateY(-1.5deg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 30px 100px rgba(0,0,0,.4);
+}
+body.light .season-video-wrap { opacity: .38; }
+.season-video-wrap video {
+  width: 100%; display: block;
+}
+
+/* Fade edges */
+.season-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 10%, transparent 88%, var(--bg) 100%),
+              linear-gradient(to right, var(--bg) 0%, transparent 6%, transparent 94%, var(--bg) 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* Text overlay */
+.season-top { position: relative; z-index: 2; text-align: center; padding: 90px 48px 0; width: 100%; max-width: 800px; }
+
+/* Feature cards bottom */
+.season-cards { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; gap: 14px; width: 94%; max-width: 1200px; }
+.season-card { flex: 1; display: flex; gap: 12px; align-items: flex-start; background: rgba(17,17,17,.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px; transition: border-color .3s, box-shadow .3s, background .3s; cursor: default; }
+body.light .season-card { background: rgba(242,242,242,.72); }
+.season-card:hover { border-color: rgba(34,197,94,.35); box-shadow: 0 0 20px rgba(34,197,94,.1); background: rgba(17,17,17,.88); }
+body.light .season-card:hover { background: rgba(242,242,242,.88); }
+.season-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; background: rgba(39,197,46,.08); border: 1px solid rgba(39,197,46,.15); }
+.season-card-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.season-card-text { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+@media (max-width: 960px) {
+  .season-cards { flex-direction: column; gap: 10px; bottom: 16px; width: 92%; }
+  .season-top { padding: 70px 24px 0; }
+  .sm-canvas-area { height: 160px; }
+  .sm-kpis { grid-template-columns: 1fr 1fr; }
+}
+.sbg-mockup {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 30px 100px rgba(0,0,0,.4);
+}
+.sbg-topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 22px; background: var(--panel2);
+  border-bottom: 1px solid var(--line);
+}
+.sbg-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--line2); }
+.sbg-lbl { font-size: 12px; color: var(--soft); margin-left: 10px; letter-spacing: .03em; }
+.sbg-body { padding: 20px; background: var(--bg); }
+.sbg-pair-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.sbg-pair {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 9px 16px;
+  font-family: ui-monospace, monospace; font-size: 16px;
+  font-weight: 800; color: var(--text);
+  transition: border-color .3s, box-shadow .3s;
+}
+.sbg-pair.flash { border-color: #22c55e; box-shadow: 0 0 18px rgba(34,197,94,.3); }
+.sbg-pill {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 12px;
+  font-size: 11px; font-weight: 700; color: var(--soft); letter-spacing: .05em;
+}
+.sbg-chart {
+  position: relative; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  height: 320px; overflow: hidden;
+}
+.sbg-chart canvas { width: 100%; height: 100%; display: block; }
+.sbg-chart-lbl {
+  position: absolute; top: 12px; left: 18px;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--soft);
+}
+.sbg-window {
+  position: absolute; top: 0; bottom: 0;
+  background: rgba(34,197,94,.1);
+  border-left: 2px dashed rgba(34,197,94,.5);
+  border-right: 2px dashed rgba(34,197,94,.5);
+  pointer-events: none; opacity: 0; z-index: 2;
+}
+.sbg-window.vis { opacity: 1; }
+.sbg-cursor {
+  position: absolute; z-index: 5; pointer-events: none;
+  opacity: 0; transition: opacity .2s;
+}
+.sbg-cursor.vis { opacity: 1; }
+.sbg-cursor::after {
+  content: ''; display: block; width: 0; height: 0;
+  border-left: 10px solid var(--text); border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.6));
+}
+.sbg-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+.sbg-stat {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 14px 10px; text-align: center;
+  transition: border-color .3s, box-shadow .3s;
+}
+.sbg-stat.hl { border-color: rgba(34,197,94,.35); box-shadow: 0 0 14px rgba(34,197,94,.15); }
+.sbg-stat-lbl { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--soft); margin-bottom: 4px; }
+.sbg-stat-val { font-family: ui-monospace, monospace; font-size: 20px; font-weight: 800; color: var(--text); transition: color .3s; }
+.sbg-stat-val.pos { color: #22c55e; }
+.sbg-stat-val.neg { color: #ef4444; }
+
+/* Soft edge fade — lighter than hero so mockup stays visible */
+.season-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(to bottom, var(--bg) 0%, transparent 12%, transparent 85%, var(--bg) 100%),
+    linear-gradient(to right, var(--bg) 0%, transparent 8%, transparent 92%, var(--bg) 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* Text overlay — top area */
+.season-top {
+  position: relative; z-index: 2;
+  text-align: center;
+  padding: 100px 48px 0;
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Feature cards — bottom row, always visible */
+.season-cards {
+  position: absolute;
+  bottom: 32px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 14px;
+  width: 96%;
+  max-width: 1200px;
+}
+.season-card {
+  flex: 1;
+  display: flex; gap: 12px; align-items: flex-start;
+  background: rgba(17,17,17,.70);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 14px;
+  transition: border-color .3s, box-shadow .3s, background .3s;
+  cursor: default;
+}
+body.light .season-card { background: rgba(242,242,242,.70); }
+.season-card:hover {
+  border-color: rgba(34,197,94,.35);
+  box-shadow: 0 0 20px rgba(34,197,94,.1);
+  background: rgba(17,17,17,.85);
+}
+body.light .season-card:hover { background: rgba(242,242,242,.85); }
+.season-card-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+  background: rgba(39,197,46,.08); border: 1px solid rgba(39,197,46,.15);
+}
+.season-card-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.season-card-text { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+@media (max-width: 960px) {
+  .season-cards { flex-direction: column; gap: 10px; bottom: 16px; width: 92%; }
+  .season-top { padding: 80px 24px 0; }
+  .sbg-chart { height: 200px; }
+}
 
 /* ── WHY ── */
 .why-section { background: var(--bg); }
@@ -862,8 +1185,10 @@ body.lang-en li.en { display: list-item; }
   nav { padding: 0 24px; }
   .nav-links { display: none; }
   section { padding: 80px 24px; }
-  .hero-inner { grid-template-columns: 1fr; gap: 52px; padding: 64px 24px; }
-  .hero-mockup-wrap { display: none; }
+  .hero-inner { padding: 64px 24px; }
+  .hero-silhouette { display: none; }
+  .hero-ppm-inner { transform: perspective(1200px) rotateX(6deg) rotateY(-2deg) rotateZ(1deg) scale(1.1); }
+  .hero-ppm-inner .ppm-row { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
   .tools-grid { grid-template-columns: 1fr; }
   .why-grid { grid-template-columns: 1fr; gap: 48px; }
   .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
@@ -911,11 +1236,68 @@ body.lang-en li.en { display: list-item; }
 <section class="hero" id="home">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
+
+  <!-- PPM Tile Background -->
+  <div class="hero-ppm-bg">
+    <div class="hero-ppm-inner">
+      <div class="ppm-row">
+        <div class="ppm-tile bull"><div class="t-pair">EUR/USD</div><div class="t-direction">▲ LONG</div><div class="t-score">+72</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">USD/JPY</div><div class="t-direction">▼ SHORT</div><div class="t-score">−64</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">GBP/USD</div><div class="t-direction">▲ LONG</div><div class="t-score">+58</div></div>
+        <div class="ppm-tile rev"><div class="t-pair">AUD/USD</div><div class="t-direction">⟲ REVERSAL</div><div class="t-score">+31</div></div>
+        <div class="ppm-tile neut"><div class="t-pair">USD/CAD</div><div class="t-direction">— NEUTRAL</div><div class="t-score">+8</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">NZD/USD</div><div class="t-direction">▲ LONG</div><div class="t-score">+49</div></div>
+      </div>
+      <div class="ppm-row">
+        <div class="ppm-tile bear"><div class="t-pair">USD/CHF</div><div class="t-direction">▼ SHORT</div><div class="t-score">−55</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">EUR/GBP</div><div class="t-direction">▲ LONG</div><div class="t-score">+44</div></div>
+        <div class="ppm-tile neut"><div class="t-pair">EUR/JPY</div><div class="t-direction">— NEUTRAL</div><div class="t-score">+12</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">GBP/JPY</div><div class="t-direction">▼ SHORT</div><div class="t-score">−38</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">AUD/JPY</div><div class="t-direction">▲ LONG</div><div class="t-score">+61</div></div>
+        <div class="ppm-tile rev"><div class="t-pair">NZD/JPY</div><div class="t-direction">⟲ REVERSAL</div><div class="t-score">−22</div></div>
+      </div>
+      <div class="ppm-row">
+        <div class="ppm-tile bull"><div class="t-pair">EUR/AUD</div><div class="t-direction">▲ LONG</div><div class="t-score">+53</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">GBP/AUD</div><div class="t-direction">▼ SHORT</div><div class="t-score">−47</div></div>
+        <div class="ppm-tile neut"><div class="t-pair">EUR/CAD</div><div class="t-direction">— NEUTRAL</div><div class="t-score">+5</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">GBP/CAD</div><div class="t-direction">▲ LONG</div><div class="t-score">+66</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">AUD/CAD</div><div class="t-direction">▼ SHORT</div><div class="t-score">−41</div></div>
+        <div class="ppm-tile rev"><div class="t-pair">EUR/NZD</div><div class="t-direction">⟲ REVERSAL</div><div class="t-score">+28</div></div>
+      </div>
+      <div class="ppm-row">
+        <div class="ppm-tile neut"><div class="t-pair">GBP/NZD</div><div class="t-direction">— NEUTRAL</div><div class="t-score">−9</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">AUD/NZD</div><div class="t-direction">▲ LONG</div><div class="t-score">+37</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">CAD/JPY</div><div class="t-direction">▼ SHORT</div><div class="t-score">−58</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">CAD/CHF</div><div class="t-direction">▲ LONG</div><div class="t-score">+45</div></div>
+        <div class="ppm-tile rev"><div class="t-pair">CHF/JPY</div><div class="t-direction">⟲ REVERSAL</div><div class="t-score">−18</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">NZD/CAD</div><div class="t-direction">▼ SHORT</div><div class="t-score">−33</div></div>
+      </div>
+      <div class="ppm-row">
+        <div class="ppm-tile bull"><div class="t-pair">EUR/CHF</div><div class="t-direction">▲ LONG</div><div class="t-score">+69</div></div>
+        <div class="ppm-tile neut"><div class="t-pair">GBP/CHF</div><div class="t-direction">— NEUTRAL</div><div class="t-score">+14</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">AUD/CHF</div><div class="t-direction">▼ SHORT</div><div class="t-score">−51</div></div>
+        <div class="ppm-tile bull"><div class="t-pair">NZD/CHF</div><div class="t-direction">▲ LONG</div><div class="t-score">+42</div></div>
+        <div class="ppm-tile rev"><div class="t-pair">EUR/SEK</div><div class="t-direction">⟲ REVERSAL</div><div class="t-score">+25</div></div>
+        <div class="ppm-tile bear"><div class="t-pair">USD/NOK</div><div class="t-direction">▼ SHORT</div><div class="t-score">−46</div></div>
+      </div>
+    </div>
+  </div>
+
   <div class="hero-inner">
 
-    <div>
-      <div class="hero-eyebrow reveal de">Professionelle Trading-Tools</div>
-      <div class="hero-eyebrow reveal en">Professional Trading Tools</div>
+    <!-- Left Silhouette -->
+    <div class="hero-silhouette left">
+      <svg viewBox="0 0 160 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="80" cy="68" rx="34" ry="40" stroke="var(--line2)" stroke-width="1.5" fill="none"/>
+        <path d="M46 108 C46 108, 30 130, 20 170 C10 210, 8 260, 8 320 L152 320 C152 260, 150 210, 140 170 C130 130, 114 108, 114 108" stroke="var(--line2)" stroke-width="1.5" fill="none"/>
+        <line x1="80" y1="108" x2="80" y2="180" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 3" opacity=".4"/>
+      </svg>
+    </div>
+
+    <!-- Center Content -->
+    <div class="hero-content">
+      <div class="hero-eyebrow reveal de">Conviction Index · CUT Tool</div>
+      <div class="hero-eyebrow reveal en">Conviction Index · CUT Tool</div>
 
       <h1 class="hero-title reveal d1">
         Trade <em>smarter.</em><br>Learn faster.
@@ -954,71 +1336,42 @@ body.lang-en li.en { display: list-item; }
       </div>
     </div>
 
-    <!-- MOCKUP -->
-    <div class="hero-mockup-wrap reveal d2">
-      <div class="mockup">
-        <div class="mock-topbar">
-          <div class="mock-dot"></div>
-          <div class="mock-dot"></div>
-          <div class="mock-dot"></div>
-          <div class="mock-label">StratTrecs · Trading Journal</div>
-        </div>
-        <div class="mock-body">
-          <div class="mock-kpis">
-            <div class="mock-kpi">
-              <div class="mock-kpi-l">Winrate</div>
-              <div class="mock-kpi-v" style="color:var(--win)">67.4%</div>
-            </div>
-            <div class="mock-kpi">
-              <div class="mock-kpi-l">Gesamt P&L</div>
-              <div class="mock-kpi-v" style="color:var(--win)">+14.8R</div>
-            </div>
-            <div class="mock-kpi">
-              <div class="mock-kpi-l">Sharpe</div>
-              <div class="mock-kpi-v" style="color:var(--text)">1.42</div>
-            </div>
-          </div>
-          <div class="mock-chart-wrap">
-            <div class="mock-chart-lbl">Equity-Kurve</div>
-            <svg width="100%" height="50" viewBox="0 0 280 50" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#27c52e" stop-opacity=".2"/>
-                  <stop offset="100%" stop-color="#27c52e" stop-opacity="0"/>
-                </linearGradient>
-              </defs>
-              <path d="M0,44 L20,40 L40,42 L60,34 L80,36 L100,28 L120,30 L140,21 L160,23 L180,15 L200,17 L220,11 L240,13 L260,8 L280,6 L280,50 L0,50Z" fill="url(#eqg)"/>
-              <path d="M0,44 L20,40 L40,42 L60,34 L80,36 L100,28 L120,30 L140,21 L160,23 L180,15 L200,17 L220,11 L240,13 L260,8 L280,6" fill="none" stroke="#27c52e" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div class="mock-trades">
-            <div class="mock-trade w">
-              <div class="mock-pill w">WIN</div>
-              <div class="mock-sym">NQ</div>
-              <div class="mock-rr">Long · 2.5R</div>
-              <div class="mock-pl p">+2.5R</div>
-            </div>
-            <div class="mock-trade l">
-              <div class="mock-pill l">LOSS</div>
-              <div class="mock-sym">EURUSD</div>
-              <div class="mock-rr">Short · 1.5R</div>
-              <div class="mock-pl n">−1.0R</div>
-            </div>
-            <div class="mock-trade w">
-              <div class="mock-pill w">WIN</div>
-              <div class="mock-sym">GC</div>
-              <div class="mock-rr">Long · 3.0R</div>
-              <div class="mock-pl p">+3.0R</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="mockup-badge">
-        <strong>Analytics</strong>
-        Heatmap · Streak · Breakdown
-      </div>
+    <!-- Right Silhouette -->
+    <div class="hero-silhouette right">
+      <svg viewBox="0 0 160 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="80" cy="68" rx="32" ry="38" stroke="var(--line2)" stroke-width="1.5" fill="none"/>
+        <path d="M48 106 C48 106, 32 128, 22 168 C12 208, 10 258, 10 320 L150 320 C150 258, 148 208, 138 168 C128 128, 112 106, 112 106" stroke="var(--line2)" stroke-width="1.5" fill="none"/>
+        <line x1="80" y1="106" x2="80" y2="178" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 3" opacity=".4"/>
+      </svg>
     </div>
 
+  </div>
+</section>
+
+<!-- SEASONALITY SHOWCASE -->
+<section class="season-showcase" id="seasonality-showcase">
+  <div class="season-bg">
+    <div class="season-video-wrap">
+      <video autoplay muted loop playsinline>
+        <source src="seasonality-bg.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+
+  <div class="season-top">
+    <div class="s-eyebrow de" style="justify-content:center">Saisonalitäts-Analyse</div>
+    <div class="s-eyebrow en" style="justify-content:center">Seasonality Analysis</div>
+    <h2 class="s-title de" style="text-align:center">Zyklen erkennen.<br>Timing verbessern.</h2>
+    <h2 class="s-title en" style="text-align:center">Spot cycles.<br>Improve timing.</h2>
+    <p class="s-sub de" style="margin:0 auto;text-align:center">Historische Muster über Jahre hinweg — für Indizes, Rohstoffe und Währungen. Drei Modi, ein Ziel: bessere Confluences.</p>
+    <p class="s-sub en" style="margin:0 auto;text-align:center">Historical patterns across years — for indices, commodities and currencies. Three modes, one goal: better confluences.</p>
+  </div>
+
+  <div class="season-cards">
+    <div class="season-card"><div class="season-card-icon">📈</div><div><div class="season-card-title de">Saisonale Kurven</div><div class="season-card-title en">Seasonal Curves</div><p class="season-card-text de">Jahresverlauf über 5–15 Jahre auf Tagesbasis.</p><p class="season-card-text en">Annual path over 5–15 years on a daily basis.</p></div></div>
+    <div class="season-card"><div class="season-card-icon">🔍</div><div><div class="season-card-title de">Window Selection</div><div class="season-card-title en">Window Selection</div><p class="season-card-text de">Zeitraum ziehen → Winrate & Return sofort sehen.</p><p class="season-card-text en">Drag a range → see winrate & return instantly.</p></div></div>
+    <div class="season-card"><div class="season-card-icon">📊</div><div><div class="season-card-title de">Multi-Asset Ranking</div><div class="season-card-title en">Multi-Asset Ranking</div><p class="season-card-text de">Dutzende Paare vergleichen, sortiert nach Performance.</p><p class="season-card-text en">Compare dozens of pairs, sorted by performance.</p></div></div>
+    <div class="season-card"><div class="season-card-icon">🗓️</div><div><div class="season-card-title de">Pair Calendar</div><div class="season-card-title en">Pair Calendar</div><p class="season-card-text de">Monats-Heatmap: Long- vs. Short-Monate.</p><p class="season-card-text en">Monthly heatmap: long vs. short months.</p></div></div>
   </div>
 </section>
 
@@ -1416,4 +1769,8 @@ function submitWL() {
   inp.style.borderColor = '';
   document.getElementById('wlForm').style.display = 'none';
   document.getElementById('wlSuccess').style.display = 'block';
-  console.log('Waitlis
+  console.log('Waitlist:', email);
+}
+</script>
+</body>
+</html>
