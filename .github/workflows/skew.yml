@@ -1,0 +1,50 @@
+# Semetrics Skew — tägliche Snapshot-Pipeline (Phase 1)
+# ------------------------------------------------------
+# Ablage:   .github/workflows/skew.yml   (fetch_skew.py liegt im Repo-Root)
+# Ergebnis: data/skew_history_BTC.csv, data/skew_history_ETH.csv,
+#           data/skew_latest_{CCY}.json — täglich um 00:15 UTC committet.
+# Danach im Frontend SKEW_HISTORY_RAW auf
+#   https://raw.githubusercontent.com/<user>/<repo>/main/data
+# setzen. Manueller Testlauf: Actions-Tab -> "Semetrics Skew Snapshot" -> Run workflow.
+
+name: Semetrics Skew Snapshot
+
+on:
+  schedule:
+    - cron: "15 0 * * *"     # täglich 00:15 UTC (nach Deribit-Tageswechsel)
+  workflow_dispatch:          # manueller Start für Tests
+
+permissions:
+  contents: write
+
+concurrency:
+  group: skew-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhängigkeiten
+        run: pip install requests
+
+      - name: Snapshot ziehen
+        run: python fetch_skew.py --currencies BTC ETH --out data
+
+      - name: Committen & pushen
+        run: |
+          git config user.name  "skew-bot"
+          git config user.email "skew-bot@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet && echo "Keine Änderungen." && exit 0
+          git commit -m "skew snapshot $(date -u +%F)"
+          git push
