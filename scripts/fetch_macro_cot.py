@@ -53,7 +53,7 @@ MACRO_ASSETS = {
         "reportType": "disaggregated",
         "aliases": [
             "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
-            "CRUDE OIL, LIGHT SWEET-WTI - NEW YORK MERCANTILE EXCHANGE",
+            "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
         ],
     },
     "COPPER": {
