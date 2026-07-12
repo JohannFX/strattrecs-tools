@@ -36,41 +36,45 @@ SOCRATA_BASE = {
 }
 
 # Muss 1:1 zu MACRO_ASSETS im HTML-Modul passen (Section 2 der Spezifikation).
-# Falls die CFTC ihre market_and_exchange_names ändert, hier UND im HTML-Modul
+# WICHTIG: Dies sind PRÄFIXE, kein exakter Stringvergleich — CFTC hängt teils
+# zusätzlichen Text an (Kontraktgröße etc.) oder benennt Kontrakte um. Matching
+# erfolgt über starts_with(), nicht über Gleichheit. Verifiziert gegen echte
+# CFTC-Live-Daten am 2026-07-12:
+#   - "2-YEAR/10-YEAR U.S. TREASURY NOTES" wurde zu "UST 2Y/10Y NOTE" umbenannt
+#   - "E-MINI S&P 500" wird inzwischen mit angehängtem Kontraktgrößen-Text geführt
+# Falls die CFTC erneut umbenennt, hier UND im HTML-Modul
 # (window.SemetricsMacroCot.MACRO_ASSETS[...].aliases) synchron nachziehen.
 MACRO_ASSETS = {
     "GOLD": {
         "reportType": "disaggregated",
-        "aliases": ["GOLD - COMMODITY EXCHANGE INC", "GOLD"],
+        "aliases": ["GOLD - COMMODITY EXCHANGE"],
     },
     "WTI": {
         "reportType": "disaggregated",
         "aliases": [
-            "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
-            "CRUDE OIL, LIGHT SWEET-WTI - NEW YORK MERCANTILE EXCHANGE",
-            "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
-            "CRUDE OIL",
+            "WTI-PHYSICAL",
+            "CRUDE OIL, LIGHT SWEET-WTI",
+            "CRUDE OIL, LIGHT SWEET -",
         ],
     },
     "COPPER": {
         "reportType": "disaggregated",
-        "aliases": ["COPPER-GRADE #1 - COMMODITY EXCHANGE INC", "COPPER - COMMODITY EXCHANGE INC", "COPPER"],
+        "aliases": ["COPPER- #1 - COMMODITY EXCHANGE", "COPPER-GRADE #1"],
     },
     "SP500": {
         "reportType": "tff",
         "aliases": [
-            "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
-            "E-MINI S&P 500 STOCK INDEX - CHICAGO MERCANTILE EXCHANGE",
+            "S&P 500 Consolidated",
             "E-MINI S&P 500",
         ],
     },
     "US2Y": {
         "reportType": "tff",
-        "aliases": ["2-YEAR U.S. TREASURY NOTES - CHICAGO BOARD OF TRADE", "2-YEAR U.S. TREASURY NOTE"],
+        "aliases": ["UST 2Y NOTE", "2-YEAR U.S. TREASURY NOTES", "2-YEAR U.S. TREASURY NOTE"],
     },
     "US10Y": {
         "reportType": "tff",
-        "aliases": ["10-YEAR U.S. TREASURY NOTES - CHICAGO BOARD OF TRADE", "10-YEAR U.S. TREASURY NOTE"],
+        "aliases": ["UST 10Y NOTE", "10-YEAR U.S. TREASURY NOTES", "10-YEAR U.S. TREASURY NOTE"],
     },
 }
 
@@ -101,11 +105,12 @@ def socrata_get(url, params, retries=3, backoff=2.0):
 
 
 def fetch_report(report_type):
-    """Holt ALLE Wochen für ALLE Alias-Marktnamen dieses Reporttyps (paginiert)."""
+    """Holt ALLE Wochen für ALLE Alias-Präfixe dieses Reporttyps (paginiert)."""
     base_url = SOCRATA_BASE[report_type]
-    aliases = sorted({a for asset in MACRO_ASSETS.values() if asset["reportType"] == report_type for a in asset["aliases"]})
-    # SoQL OR-Verknüpfung über alle Aliase dieses Reporttyps
-    where_clause = " OR ".join([f"market_and_exchange_names = '{a.replace(chr(39), '')}'" for a in aliases])
+    prefixes = sorted({a for asset in MACRO_ASSETS.values() if asset["reportType"] == report_type for a in asset["aliases"]})
+    # starts_with() statt Gleichheit: robust gegen CFTC-Umbenennungen und
+    # angehängten Zusatztext (z.B. Kontraktgrößen-Beschreibung).
+    where_clause = " OR ".join([f"starts_with(market_and_exchange_names, '{p.replace(chr(39), '')}')" for p in prefixes])
     all_rows, offset = [], 0
     while True:
         params = {
