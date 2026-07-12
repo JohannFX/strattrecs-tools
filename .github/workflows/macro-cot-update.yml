@@ -1,0 +1,42 @@
+# .github/workflows/macro-cot-update.yml
+#
+# Spiegelt CFTC Disaggregated + TFF (Futures Only) für die 6 Macro-Assets
+# wöchentlich in dieses Repo — analog zum bestehenden FX-Legacy-COT-Pipeline.
+# CFTC veröffentlicht COT-Daten freitags ca. 15:30 ET (Reportwoche: Dienstag).
+# Lauf samstags 06:00 UTC lässt genug Puffer für Verzögerungen.
+name: Macro COT Mirror
+
+on:
+  schedule:
+    - cron: '0 6 * * 6'   # jeden Samstag, 06:00 UTC
+  workflow_dispatch: {}     # manueller Trigger im Actions-Tab
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch & mirror Macro COT data
+        run: python scripts/fetch_macro_cot.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "macro-cot-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/macro_cot_disaggregated data/macro_cot_tff
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen — nichts zu committen."
+          else
+            git commit -m "chore: weekly macro COT data update ($(date -u +%Y-%m-%d))"
+            git push
+          fi
