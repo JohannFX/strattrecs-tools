@@ -53,6 +53,7 @@ MACRO_ASSETS = {
         "reportType": "disaggregated",
         "aliases": [
             "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
+            "CRUDE OIL, LIGHT SWEET-WTI - NEW YORK MERCANTILE EXCHANGE",
         ],
     },
     "COPPER": {
@@ -62,7 +63,7 @@ MACRO_ASSETS = {
     "SP500": {
         "reportType": "tff",
         "aliases": [
-            "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
+            "S&P 500 Consolidated - CHICAGO MERCANTILE EXCHANGE",
         ],
     },
     "US2Y": {
